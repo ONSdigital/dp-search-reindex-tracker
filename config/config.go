@@ -22,8 +22,8 @@ type Config struct {
 // TODO: change "hello-called" to your topic (config field name, env var name, default value later)
 type KafkaConfig struct {
 	Brokers          []string `envconfig:"KAFKA_ADDR"`
-	HelloCalledGroup string   `envconfig:"HELLO_CALLED_GROUP"`
-	HelloCalledTopic string   `envconfig:"HELLO_CALLED_TOPIC"`
+	HelloCalledGroup string   `envconfig:"KAFKA_HELLO_CALLED_GROUP"`
+	HelloCalledTopic string   `envconfig:"KAFKA_HELLO_CALLED_TOPIC"`
 	NumWorkers       int      `envconfig:"KAFKA_NUM_WORKERS"`
 	OffsetOldest     bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
 	SecCACerts       string   `envconfig:"KAFKA_SEC_CA_CERTS"`
