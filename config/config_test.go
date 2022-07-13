@@ -26,11 +26,15 @@ func TestConfig(t *testing.T) {
 				So(cfg.HealthCheckCriticalTimeout, ShouldEqual, 90*time.Second)
 				So(cfg.KafkaConfig.Brokers, ShouldHaveLength, 1)
 				So(cfg.KafkaConfig.Brokers[0], ShouldEqual, "localhost:9092")
-				So(cfg.KafkaConfig.Version, ShouldEqual, "1.0.2")
-				So(cfg.KafkaConfig.SecProtocol, ShouldEqual, "")
-				So(cfg.KafkaConfig.NumWorkers, ShouldEqual, 1)
 				So(cfg.KafkaConfig.HelloCalledGroup, ShouldEqual, "dp-search-reindex-tracker")
 				So(cfg.KafkaConfig.HelloCalledTopic, ShouldEqual, "hello-called")
+				So(cfg.KafkaConfig.NumWorkers, ShouldEqual, 1)
+				So(cfg.KafkaConfig.SecCACerts, ShouldEqual, "")
+				So(cfg.KafkaConfig.SecClientCert, ShouldEqual, "")
+				So(cfg.KafkaConfig.SecClientKey, ShouldEqual, "")
+				So(cfg.KafkaConfig.SecProtocol, ShouldEqual, "")
+				So(cfg.KafkaConfig.SecSkipVerify, ShouldBeFalse)
+				So(cfg.KafkaConfig.Version, ShouldEqual, "1.0.2")
 			})
 
 			Convey("Then a second call to config should return the same config", func() {

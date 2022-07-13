@@ -22,16 +22,16 @@ type Config struct {
 // TODO: change "hello-called" to your topic (config field name, env var name, default value later)
 type KafkaConfig struct {
 	Brokers          []string `envconfig:"KAFKA_ADDR"`
-	Version          string   `envconfig:"KAFKA_VERSION"`
-	OffsetOldest     bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
-	SecProtocol      string   `envconfig:"KAFKA_SEC_PROTO"`
-	SecCACerts       string   `envconfig:"KAFKA_SEC_CA_CERTS"`
-	SecClientKey     string   `envconfig:"KAFKA_SEC_CLIENT_KEY"    json:"-"`
-	SecClientCert    string   `envconfig:"KAFKA_SEC_CLIENT_CERT"`
-	SecSkipVerify    bool     `envconfig:"KAFKA_SEC_SKIP_VERIFY"`
-	NumWorkers       int      `envconfig:"KAFKA_NUM_WORKERS"`
 	HelloCalledGroup string   `envconfig:"HELLO_CALLED_GROUP"`
 	HelloCalledTopic string   `envconfig:"HELLO_CALLED_TOPIC"`
+	NumWorkers       int      `envconfig:"KAFKA_NUM_WORKERS"`
+	OffsetOldest     bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
+	SecCACerts       string   `envconfig:"KAFKA_SEC_CA_CERTS"`
+	SecClientCert    string   `envconfig:"KAFKA_SEC_CLIENT_CERT"`
+	SecClientKey     string   `envconfig:"KAFKA_SEC_CLIENT_KEY"    json:"-"`
+	SecProtocol      string   `envconfig:"KAFKA_SEC_PROTO"`
+	SecSkipVerify    bool     `envconfig:"KAFKA_SEC_SKIP_VERIFY"`
+	Version          string   `envconfig:"KAFKA_VERSION"`
 }
 
 var cfg *Config
@@ -51,11 +51,16 @@ func Get() (*Config, error) {
 		OutputFilePath:             "/tmp/helloworld.txt",
 		KafkaConfig: KafkaConfig{
 			Brokers:          []string{"localhost:9092"},
-			Version:          "1.0.2",
-			OffsetOldest:     true,
-			NumWorkers:       1,
 			HelloCalledGroup: "dp-search-reindex-tracker",
 			HelloCalledTopic: "hello-called",
+			NumWorkers:       1,
+			OffsetOldest:     true,
+			SecCACerts:       "",
+			SecClientCert:    "",
+			SecClientKey:     "",
+			SecProtocol:      "",
+			SecSkipVerify:    false,
+			Version:          "1.0.2",
 		},
 	}
 
