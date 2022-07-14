@@ -1,0 +1,21 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.18.4
+
+inputs:
+  - name: dp-search-reindex-tracker
+
+outputs:
+  - name: build
+
+caches:
+  - path: go/
+
+run:
+  path: dp-search-reindex-tracker/ci/scripts/build.sh
