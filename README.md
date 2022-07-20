@@ -5,8 +5,18 @@ dp-search-reindex-tracker tracks a search reindex job
 
 * Run `make debug`
 
-The service runs in the background consuming messages from Kafka.
-An example event can be created using the helper script, `make produce`.
+The Search Reindex Tracker service runs in the background consuming messages from Kafka. 
+
+The following diagram shows how the Search Reindex Tracker will be used to track the progress of search reindex jobs and their tasks:
+[Search Reindex Pipeline](https://miro.com/app/board/o9J_liKF4Lg=/?fromRedirect=1)
+
+The topics will produce the following messages:
+- The Search Reindex API will produce messages, for the reindex-requested topic, that request new search reindex jobs. 
+  The Search Reindex tracker will consume these and set the state of the relevant search reindex jobs to "in-progress". 
+- The Search Data Finder will produce messages for the reindex-task-counts topic. 
+  The Search Reindex tracker will consume these in order to set the "total search documents" number for the relevant search reindex jobs. 
+- The Search Data Importer will produce messages for the search-data-imported topic.
+  The Search Reindex Tracker will consume these in order to set the "total inserted search documents" number for the relevant search reindex jobs.
 
 ### Dependencies
 
@@ -30,8 +40,12 @@ An example event can be created using the helper script, `make produce`.
 | KAFKA_SEC_CLIENT_KEY         | _unset_                           | PEM for the client key ([kafka TLS doc])
 | KAFKA_SEC_CLIENT_CERT        | _unset_                           | PEM for the client certificate ([kafka TLS doc])
 | KAFKA_SEC_SKIP_VERIFY        | false                             | ignores server certificate issues if `true` ([kafka TLS doc])
-| HELLO_CALLED_GROUP           | dp-search-reindex-tracker         | The consumer group this application to consume topic messages
-| HELLO_CALLED_TOPIC           | hello-called                      | The name of the topic to consume messages from
+| REINDEX_REQUESTED_GROUP      | dp-search-reindex-tracker         | The consumer group name for reindex requested events
+| REINDEX_REQUESTED_TOPIC      | reindex-requested                 | The topic name for reindex requested events
+| REINDEX_TASK_COUNTS_GROUP    | dp-search-reindex-tracker         | The consumer group name for reindex task count events
+| REINDEX_TASK_COUNTS_TOPIC    | reindex-task-counts               | The topic name for reindex task count events
+| SEARCH_DATA_IMPORTED_GROUP   | dp-search-reindex-tracker         | The consumer group name for search data imported events
+| SEARCH_DATA_IMPORTED_TOPIC   | search-data-imported              | The topic name for search data imported events
 
 [kafka TLS doc]: https://github.com/ONSdigital/dp-kafka/tree/main/examples#tls
 
