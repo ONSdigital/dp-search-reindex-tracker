@@ -70,10 +70,10 @@ func (e *Init) DoGetKafkaConsumer(ctx context.Context, kafkaCfg *config.KafkaCon
 	}
 	cgConfig := &dpkafka.ConsumerGroupConfig{
 		BrokerAddrs:  kafkaCfg.Brokers,
-		GroupName:    kafkaCfg.HelloCalledGroup,
+		GroupName:    kafkaCfg.ReindexRequestedGroup,
 		KafkaVersion: &kafkaCfg.Version,
 		Offset:       &kafkaOffset,
-		Topic:        kafkaCfg.HelloCalledTopic,
+		Topic:        kafkaCfg.ReindexRequestedTopic,
 	}
 	if kafkaCfg.SecProtocol == config.KafkaTLSProtocolFlag {
 		cgConfig.SecurityConfig = dpkafka.GetSecurityConfig(
