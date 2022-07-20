@@ -52,7 +52,7 @@ func Get() (*Config, error) {
 		KafkaConfig: KafkaConfig{
 			Brokers:          []string{"localhost:9092"},
 			HelloCalledGroup: "dp-search-reindex-tracker",
-			HelloCalledTopic: "hello-called",
+			HelloCalledTopic: "reindex-requested",
 			NumWorkers:       1,
 			OffsetOldest:     true,
 			SecCACerts:       "",
