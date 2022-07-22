@@ -12,17 +12,17 @@ import (
 
 // ExternalServiceList holds the initialiser and initialisation state of external services.
 type ExternalServiceList struct {
-	HealthCheck   bool
-	KafkaConsumer bool
-	Init          Initialiser
+	HealthCheck    bool
+	KafkaConsumers bool
+	Init           Initialiser
 }
 
 // NewServiceList creates a new service list with the provided initialiser
 func NewServiceList(initialiser Initialiser) *ExternalServiceList {
 	return &ExternalServiceList{
-		HealthCheck:   false,
-		KafkaConsumer: false,
-		Init:          initialiser,
+		HealthCheck:    false,
+		KafkaConsumers: false,
+		Init:           initialiser,
 	}
 }
 
@@ -41,7 +41,7 @@ func (e *ExternalServiceList) GetKafkaConsumers(ctx context.Context, cfg *config
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	e.KafkaConsumer = true
+	e.KafkaConsumers = true
 	return reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, nil
 }
 
