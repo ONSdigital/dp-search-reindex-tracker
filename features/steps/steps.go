@@ -77,7 +77,7 @@ func (c *Component) sendToConsumer(e *event.HelloCalled) error {
 		return err
 	}
 
-	c.KafkaConsumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
+	c.reindexRequestedConsumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
 	return nil
 
 }
