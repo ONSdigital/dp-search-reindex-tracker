@@ -20,17 +20,17 @@ type Config struct {
 
 // KafkaConfig contains the config required to connect to Kafka
 type KafkaConfig struct {
-	Brokers          []string `envconfig:"KAFKA_ADDR"`
+	Brokers               []string `envconfig:"KAFKA_ADDR"`
+	NumWorkers            int      `envconfig:"KAFKA_NUM_WORKERS"`
+	OffsetOldest          bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
 	ReindexRequestedGroup string   `envconfig:"KAFKA_REINDEX_REQUESTED_GROUP"`
 	ReindexRequestedTopic string   `envconfig:"KAFKA_REINDEX_REQUESTED_TOPIC"`
-	NumWorkers       int      `envconfig:"KAFKA_NUM_WORKERS"`
-	OffsetOldest     bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
-	SecCACerts       string   `envconfig:"KAFKA_SEC_CA_CERTS"`
-	SecClientCert    string   `envconfig:"KAFKA_SEC_CLIENT_CERT"`
-	SecClientKey     string   `envconfig:"KAFKA_SEC_CLIENT_KEY"    json:"-"`
-	SecProtocol      string   `envconfig:"KAFKA_SEC_PROTO"`
-	SecSkipVerify    bool     `envconfig:"KAFKA_SEC_SKIP_VERIFY"`
-	Version          string   `envconfig:"KAFKA_VERSION"`
+	SecCACerts            string   `envconfig:"KAFKA_SEC_CA_CERTS"`
+	SecClientCert         string   `envconfig:"KAFKA_SEC_CLIENT_CERT"`
+	SecClientKey          string   `envconfig:"KAFKA_SEC_CLIENT_KEY"    json:"-"`
+	SecProtocol           string   `envconfig:"KAFKA_SEC_PROTO"`
+	SecSkipVerify         bool     `envconfig:"KAFKA_SEC_SKIP_VERIFY"`
+	Version               string   `envconfig:"KAFKA_VERSION"`
 }
 
 var cfg *Config
@@ -49,17 +49,17 @@ func Get() (*Config, error) {
 		HealthCheckCriticalTimeout: 90 * time.Second,
 		OutputFilePath:             "/tmp/helloworld.txt",
 		KafkaConfig: KafkaConfig{
-			Brokers:          []string{"localhost:9092"},
+			Brokers:               []string{"localhost:9092"},
+			NumWorkers:            1,
+			OffsetOldest:          true,
 			ReindexRequestedGroup: "dp-search-reindex-tracker",
 			ReindexRequestedTopic: "reindex-requested",
-			NumWorkers:       1,
-			OffsetOldest:     true,
-			SecCACerts:       "",
-			SecClientCert:    "",
-			SecClientKey:     "",
-			SecProtocol:      "",
-			SecSkipVerify:    false,
-			Version:          "1.0.2",
+			SecCACerts:            "",
+			SecClientCert:         "",
+			SecClientKey:          "",
+			SecProtocol:           "",
+			SecSkipVerify:         false,
+			Version:               "1.0.2",
 		},
 	}
 

@@ -77,12 +77,12 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	}()
 
 	return &Service{
-		server:          s,
-		router:          r,
-		serviceList:     serviceList,
-		healthCheck:     hc,
-		reindexRequestedConsumer:        reindexRequestedConsumer,
-		shutdownTimeout: cfg.GracefulShutdownTimeout,
+		server:                   s,
+		router:                   r,
+		serviceList:              serviceList,
+		healthCheck:              hc,
+		reindexRequestedConsumer: reindexRequestedConsumer,
+		shutdownTimeout:          cfg.GracefulShutdownTimeout,
 	}, nil
 }
 
