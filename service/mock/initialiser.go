@@ -28,7 +28,7 @@ var _ service.Initialiser = &InitialiserMock{}
 // 			DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 // 				panic("mock out the DoGetHealthCheck method")
 // 			},
-// 			DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+// 			DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
 // 				panic("mock out the DoGetKafkaConsumers method")
 // 			},
 // 		}
@@ -45,7 +45,7 @@ type InitialiserMock struct {
 	DoGetHealthCheckFunc func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error)
 
 	// DoGetKafkaConsumersFunc mocks the DoGetKafkaConsumers method.
-	DoGetKafkaConsumersFunc func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error)
+	DoGetKafkaConsumersFunc func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -159,7 +159,7 @@ func (mock *InitialiserMock) DoGetHealthCheckCalls() []struct {
 }
 
 // DoGetKafkaConsumers calls DoGetKafkaConsumersFunc.
-func (mock *InitialiserMock) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+func (mock *InitialiserMock) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
 	if mock.DoGetKafkaConsumersFunc == nil {
 		panic("InitialiserMock.DoGetKafkaConsumersFunc: method is nil but Initialiser.DoGetKafkaConsumers was just called")
 	}

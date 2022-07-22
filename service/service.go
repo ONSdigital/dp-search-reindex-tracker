@@ -38,7 +38,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
 	// Get Kafka consumer
-	reindexRequestedConsumer, reindexTaskCountsConsumer, err := serviceList.GetKafkaConsumers(ctx, cfg)
+	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := serviceList.GetKafkaConsumers(ctx, cfg)
 	if err != nil {
 		log.Fatal(ctx, "failed to initialise kafka consumers", err)
 		return nil, err
@@ -57,6 +57,14 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 
 	if consumerStartErr := reindexTaskCountsConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the reindex task counts consumer", consumerStartErr)
+		return nil, consumerStartErr
+	}
+
+	// Event Handler for 'Search Data Imported' Kafka Consumer
+	event.Consume(ctx, searchDataImportedConsumer, &event.HelloCalledHandler{}, cfg)
+
+	if consumerStartErr := searchDataImportedConsumer.Start(); consumerStartErr != nil {
+		log.Fatal(ctx, "error starting the search data imported consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
 

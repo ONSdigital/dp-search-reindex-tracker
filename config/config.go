@@ -20,19 +20,21 @@ type Config struct {
 
 // KafkaConfig contains the config required to connect to Kafka
 type KafkaConfig struct {
-	Brokers                []string `envconfig:"KAFKA_ADDR"`
-	NumWorkers             int      `envconfig:"KAFKA_NUM_WORKERS"`
-	OffsetOldest           bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
-	ReindexRequestedGroup  string   `envconfig:"KAFKA_REINDEX_REQUESTED_GROUP"`
-	ReindexRequestedTopic  string   `envconfig:"KAFKA_REINDEX_REQUESTED_TOPIC"`
-	ReindexTaskCountsGroup string   `envconfig:"KAFKA_REINDEX_TASK_COUNTS_GROUP"`
-	ReindexTaskCountsTopic string   `envconfig:"KAFKA_REINDEX_TASK_COUNTS_TOPIC"`
-	SecCACerts             string   `envconfig:"KAFKA_SEC_CA_CERTS"`
-	SecClientCert          string   `envconfig:"KAFKA_SEC_CLIENT_CERT"`
-	SecClientKey           string   `envconfig:"KAFKA_SEC_CLIENT_KEY"    json:"-"`
-	SecProtocol            string   `envconfig:"KAFKA_SEC_PROTO"`
-	SecSkipVerify          bool     `envconfig:"KAFKA_SEC_SKIP_VERIFY"`
-	Version                string   `envconfig:"KAFKA_VERSION"`
+	Brokers                 []string `envconfig:"KAFKA_ADDR"`
+	NumWorkers              int      `envconfig:"KAFKA_NUM_WORKERS"`
+	OffsetOldest            bool     `envconfig:"KAFKA_OFFSET_OLDEST"`
+	ReindexRequestedGroup   string   `envconfig:"KAFKA_REINDEX_REQUESTED_GROUP"`
+	ReindexRequestedTopic   string   `envconfig:"KAFKA_REINDEX_REQUESTED_TOPIC"`
+	ReindexTaskCountsGroup  string   `envconfig:"KAFKA_REINDEX_TASK_COUNTS_GROUP"`
+	ReindexTaskCountsTopic  string   `envconfig:"KAFKA_REINDEX_TASK_COUNTS_TOPIC"`
+	SearchDataImportedGroup string   `envconfig:"KAFKA_SEARCH_DATA_IMPORTED_GROUP"`
+	SearchDataImportedTopic string   `envconfig:"KAFKA_SEARCH_DATA_IMPORTED_TOPIC"`
+	SecCACerts              string   `envconfig:"KAFKA_SEC_CA_CERTS"`
+	SecClientCert           string   `envconfig:"KAFKA_SEC_CLIENT_CERT"`
+	SecClientKey            string   `envconfig:"KAFKA_SEC_CLIENT_KEY"    json:"-"`
+	SecProtocol             string   `envconfig:"KAFKA_SEC_PROTO"`
+	SecSkipVerify           bool     `envconfig:"KAFKA_SEC_SKIP_VERIFY"`
+	Version                 string   `envconfig:"KAFKA_VERSION"`
 }
 
 var cfg *Config
@@ -51,19 +53,21 @@ func Get() (*Config, error) {
 		HealthCheckCriticalTimeout: 90 * time.Second,
 		OutputFilePath:             "/tmp/helloworld.txt",
 		KafkaConfig: KafkaConfig{
-			Brokers:                []string{"localhost:9092"},
-			NumWorkers:             1,
-			OffsetOldest:           true,
-			ReindexRequestedGroup:  "dp-search-reindex-tracker",
-			ReindexRequestedTopic:  "reindex-requested",
-			ReindexTaskCountsGroup: "dp-search-reindex-tracker",
-			ReindexTaskCountsTopic: "reindex-task-counts",
-			SecCACerts:             "",
-			SecClientCert:          "",
-			SecClientKey:           "",
-			SecProtocol:            "",
-			SecSkipVerify:          false,
-			Version:                "1.0.2",
+			Brokers:                 []string{"localhost:9092"},
+			NumWorkers:              1,
+			OffsetOldest:            true,
+			ReindexRequestedGroup:   "dp-search-reindex-tracker",
+			ReindexRequestedTopic:   "reindex-requested",
+			ReindexTaskCountsGroup:  "dp-search-reindex-tracker",
+			ReindexTaskCountsTopic:  "reindex-task-counts",
+			SearchDataImportedGroup: "dp-search-reindex-tracker",
+			SearchDataImportedTopic: "search-data-imported",
+			SecCACerts:              "",
+			SecClientCert:           "",
+			SecClientKey:            "",
+			SecProtocol:             "",
+			SecSkipVerify:           false,
+			Version:                 "1.0.2",
 		},
 	}
 

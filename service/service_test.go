@@ -29,8 +29,8 @@ var (
 	errHealthcheck   = errors.New("healthCheck error")
 )
 
-var funcDoGetKafkaConsumersErr = func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
-	return nil, nil, errKafkaConsumer
+var funcDoGetKafkaConsumersErr = func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+	return nil, nil, nil, errKafkaConsumer
 }
 
 var funcDoGetHealthcheckErr = func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
@@ -64,8 +64,8 @@ func TestRun(t *testing.T) {
 			},
 		}
 
-		funcDoGetKafkaConsumersOk := func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
-			return consumerMock, consumerMock, nil
+		funcDoGetKafkaConsumersOk := func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+			return consumerMock, consumerMock, consumerMock, nil
 		}
 
 		funcDoGetHealthcheckOk := func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
@@ -78,7 +78,7 @@ func TestRun(t *testing.T) {
 
 		Convey("Given that initialising Kafka consumer returns an error", func() {
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc:    funcDoGetHTTPServerNil,
+				DoGetHTTPServerFunc:     funcDoGetHTTPServerNil,
 				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersErr,
 			}
 			svcErrors := make(chan error, 1)
@@ -94,8 +94,8 @@ func TestRun(t *testing.T) {
 
 		Convey("Given that initialising healthcheck returns an error", func() {
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc:    funcDoGetHTTPServerNil,
-				DoGetHealthCheckFunc:   funcDoGetHealthcheckErr,
+				DoGetHTTPServerFunc:     funcDoGetHTTPServerNil,
+				DoGetHealthCheckFunc:    funcDoGetHealthcheckErr,
 				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
@@ -112,8 +112,8 @@ func TestRun(t *testing.T) {
 		Convey("Given that all dependencies are successfully initialised", func() {
 
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc:    funcDoGetHTTPServer,
-				DoGetHealthCheckFunc:   funcDoGetHealthcheckOk,
+				DoGetHTTPServerFunc:     funcDoGetHTTPServer,
+				DoGetHealthCheckFunc:    funcDoGetHealthcheckOk,
 				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
@@ -209,8 +209,8 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
-				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
-					return consumerMock, consumerMock, nil
+				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+					return consumerMock, consumerMock, consumerMock, nil
 				},
 			}
 
@@ -240,8 +240,8 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
-				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
-					return consumerMock, consumerMock, nil
+				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+					return consumerMock, consumerMock, consumerMock, nil
 				},
 			}
 

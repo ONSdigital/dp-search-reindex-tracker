@@ -17,14 +17,15 @@ import (
 
 type Component struct {
 	componenttest.ErrorFeature
-	serviceList   *service.ExternalServiceList
-	reindexRequestedConsumer kafka.IConsumerGroup
-	reindexTaskCountsConsumer kafka.IConsumerGroup
-	killChannel   chan os.Signal
-	apiFeature    *componenttest.APIFeature
-	errorChan     chan error
-	svc           *service.Service
-	cfg           *config.Config
+	serviceList                *service.ExternalServiceList
+	reindexRequestedConsumer   kafka.IConsumerGroup
+	reindexTaskCountsConsumer  kafka.IConsumerGroup
+	searchDataImportedConsumer kafka.IConsumerGroup
+	killChannel                chan os.Signal
+	apiFeature                 *componenttest.APIFeature
+	errorChan                  chan error
+	svc                        *service.Service
+	cfg                        *config.Config
 }
 
 func NewComponent() *Component {
@@ -43,6 +44,12 @@ func NewComponent() *Component {
 	reindexTaskCountsConsumer.LogErrorsFunc = func(ctx context.Context) {}
 	c.reindexTaskCountsConsumer = reindexTaskCountsConsumer
 
+	searchDataImportedConsumer := kafkatest.NewMessageConsumer(false)
+	searchDataImportedConsumer.CheckerFunc = funcCheck
+	searchDataImportedConsumer.StartFunc = func() error { return nil }
+	searchDataImportedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	c.searchDataImportedConsumer = searchDataImportedConsumer
+
 	cfg, err := config.Get()
 	if err != nil {
 		return nil
@@ -52,8 +59,8 @@ func NewComponent() *Component {
 
 	initMock := &mock.InitialiserMock{
 		DoGetKafkaConsumersFunc: c.DoGetConsumers,
-		DoGetHealthCheckFunc:   c.DoGetHealthCheck,
-		DoGetHTTPServerFunc:    c.DoGetHTTPServer,
+		DoGetHealthCheckFunc:    c.DoGetHealthCheck,
+		DoGetHTTPServerFunc:     c.DoGetHTTPServer,
 	}
 
 	c.serviceList = service.NewServiceList(initMock)
@@ -81,8 +88,8 @@ func (c *Component) DoGetHTTPServer(bindAddr string, router http.Handler) servic
 	return dphttp.NewServer(bindAddr, router)
 }
 
-func (c *Component) DoGetConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
-	return c.reindexRequestedConsumer, c.reindexTaskCountsConsumer,nil
+func (c *Component) DoGetConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+	return c.reindexRequestedConsumer, c.reindexTaskCountsConsumer, c.searchDataImportedConsumer, nil
 }
 
 func funcCheck(ctx context.Context, state *healthcheck.CheckState) error {
