@@ -52,6 +52,9 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 		return nil, consumerStartErr
 	}
 
+	// Kafka error logging go-routine
+	reindexRequestedConsumer.LogErrors(ctx)
+
 	// Event Handler for 'Reindex Task Counts' Kafka Consumer
 	event.Consume(ctx, reindexTaskCountsConsumer, &event.HelloCalledHandler{}, cfg)
 
@@ -59,6 +62,9 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 		log.Fatal(ctx, "error starting the reindex task counts consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
+
+	// Kafka error logging go-routine
+	reindexTaskCountsConsumer.LogErrors(ctx)
 
 	// Event Handler for 'Search Data Imported' Kafka Consumer
 	event.Consume(ctx, searchDataImportedConsumer, &event.HelloCalledHandler{}, cfg)
@@ -69,7 +75,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	}
 
 	// Kafka error logging go-routine
-	reindexRequestedConsumer.LogErrors(ctx)
+	searchDataImportedConsumer.LogErrors(ctx)
 
 	// Get HealthCheck
 	hc, err := serviceList.GetHealthCheck(cfg, buildTime, gitCommit, version)
