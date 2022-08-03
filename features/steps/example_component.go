@@ -17,24 +17,38 @@ import (
 
 type Component struct {
 	componenttest.ErrorFeature
-	serviceList   *service.ExternalServiceList
-	KafkaConsumer kafka.IConsumerGroup
-	killChannel   chan os.Signal
-	apiFeature    *componenttest.APIFeature
-	errorChan     chan error
-	svc           *service.Service
-	cfg           *config.Config
+	serviceList                *service.ExternalServiceList
+	reindexRequestedConsumer   kafka.IConsumerGroup
+	reindexTaskCountsConsumer  kafka.IConsumerGroup
+	searchDataImportedConsumer kafka.IConsumerGroup
+	killChannel                chan os.Signal
+	apiFeature                 *componenttest.APIFeature
+	errorChan                  chan error
+	svc                        *service.Service
+	cfg                        *config.Config
 }
 
 func NewComponent() *Component {
 
 	c := &Component{errorChan: make(chan error)}
 
-	consumer := kafkatest.NewMessageConsumer(false)
-	consumer.CheckerFunc = funcCheck
-	consumer.StartFunc = func() error { return nil }
-	consumer.LogErrorsFunc = func(ctx context.Context) {}
-	c.KafkaConsumer = consumer
+	reindexRequestedConsumer := kafkatest.NewMessageConsumer(false)
+	reindexRequestedConsumer.CheckerFunc = funcCheck
+	reindexRequestedConsumer.StartFunc = func() error { return nil }
+	reindexRequestedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	c.reindexRequestedConsumer = reindexRequestedConsumer
+
+	reindexTaskCountsConsumer := kafkatest.NewMessageConsumer(false)
+	reindexTaskCountsConsumer.CheckerFunc = funcCheck
+	reindexTaskCountsConsumer.StartFunc = func() error { return nil }
+	reindexTaskCountsConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	c.reindexTaskCountsConsumer = reindexTaskCountsConsumer
+
+	searchDataImportedConsumer := kafkatest.NewMessageConsumer(false)
+	searchDataImportedConsumer.CheckerFunc = funcCheck
+	searchDataImportedConsumer.StartFunc = func() error { return nil }
+	searchDataImportedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	c.searchDataImportedConsumer = searchDataImportedConsumer
 
 	cfg, err := config.Get()
 	if err != nil {
@@ -44,9 +58,9 @@ func NewComponent() *Component {
 	c.cfg = cfg
 
 	initMock := &mock.InitialiserMock{
-		DoGetKafkaConsumerFunc: c.DoGetConsumer,
-		DoGetHealthCheckFunc:   c.DoGetHealthCheck,
-		DoGetHTTPServerFunc:    c.DoGetHTTPServer,
+		DoGetKafkaConsumersFunc: c.DoGetConsumers,
+		DoGetHealthCheckFunc:    c.DoGetHealthCheck,
+		DoGetHTTPServerFunc:     c.DoGetHTTPServer,
 	}
 
 	c.serviceList = service.NewServiceList(initMock)
@@ -74,8 +88,8 @@ func (c *Component) DoGetHTTPServer(bindAddr string, router http.Handler) servic
 	return dphttp.NewServer(bindAddr, router)
 }
 
-func (c *Component) DoGetConsumer(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafkaConsumer kafka.IConsumerGroup, err error) {
-	return c.KafkaConsumer, nil
+func (c *Component) DoGetConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+	return c.reindexRequestedConsumer, c.reindexTaskCountsConsumer, c.searchDataImportedConsumer, nil
 }
 
 func funcCheck(ctx context.Context, state *healthcheck.CheckState) error {

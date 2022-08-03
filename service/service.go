@@ -14,12 +14,14 @@ import (
 
 // Service contains all the configs, server and clients to run the event handler service
 type Service struct {
-	server          HTTPServer
-	router          *mux.Router
-	serviceList     *ExternalServiceList
-	healthCheck     HealthChecker
-	consumer        kafka.IConsumerGroup
-	shutdownTimeout time.Duration
+	server                     HTTPServer
+	router                     *mux.Router
+	serviceList                *ExternalServiceList
+	healthCheck                HealthChecker
+	reindexRequestedConsumer   kafka.IConsumerGroup
+	reindexTaskCountsConsumer  kafka.IConsumerGroup
+	searchDataImportedConsumer kafka.IConsumerGroup
+	shutdownTimeout            time.Duration
 }
 
 // Run the service
@@ -38,22 +40,44 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
 	// Get Kafka consumer
-	consumer, err := serviceList.GetKafkaConsumer(ctx, cfg)
+	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := serviceList.GetKafkaConsumers(ctx, cfg)
 	if err != nil {
-		log.Fatal(ctx, "failed to initialise kafka consumer", err)
+		log.Fatal(ctx, "failed to initialise kafka consumers", err)
 		return nil, err
 	}
 
-	// Event Handler for Kafka Consumer
-	event.Consume(ctx, consumer, &event.HelloCalledHandler{}, cfg)
+	// Event Handler for 'Reindex Requested' Kafka Consumer
+	event.Consume(ctx, reindexRequestedConsumer, &event.HelloCalledHandler{}, cfg)
 
-	if consumerStartErr := consumer.Start(); consumerStartErr != nil {
-		log.Fatal(ctx, "error starting the consumer", consumerStartErr)
+	if consumerStartErr := reindexRequestedConsumer.Start(); consumerStartErr != nil {
+		log.Fatal(ctx, "error starting the reindex requested consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
 
 	// Kafka error logging go-routine
-	consumer.LogErrors(ctx)
+	reindexRequestedConsumer.LogErrors(ctx)
+
+	// Event Handler for 'Reindex Task Counts' Kafka Consumer
+	event.Consume(ctx, reindexTaskCountsConsumer, &event.HelloCalledHandler{}, cfg)
+
+	if consumerStartErr := reindexTaskCountsConsumer.Start(); consumerStartErr != nil {
+		log.Fatal(ctx, "error starting the reindex task counts consumer", consumerStartErr)
+		return nil, consumerStartErr
+	}
+
+	// Kafka error logging go-routine
+	reindexTaskCountsConsumer.LogErrors(ctx)
+
+	// Event Handler for 'Search Data Imported' Kafka Consumer
+	event.Consume(ctx, searchDataImportedConsumer, &event.HelloCalledHandler{}, cfg)
+
+	if consumerStartErr := searchDataImportedConsumer.Start(); consumerStartErr != nil {
+		log.Fatal(ctx, "error starting the search data imported consumer", consumerStartErr)
+		return nil, consumerStartErr
+	}
+
+	// Kafka error logging go-routine
+	searchDataImportedConsumer.LogErrors(ctx)
 
 	// Get HealthCheck
 	hc, err := serviceList.GetHealthCheck(cfg, buildTime, gitCommit, version)
@@ -62,7 +86,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 		return nil, err
 	}
 
-	if err := registerCheckers(ctx, hc, consumer); err != nil {
+	if err := registerCheckers(ctx, hc, reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer); err != nil {
 		return nil, errors.Wrap(err, "unable to register checkers")
 	}
 
@@ -77,12 +101,14 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	}()
 
 	return &Service{
-		server:          s,
-		router:          r,
-		serviceList:     serviceList,
-		healthCheck:     hc,
-		consumer:        consumer,
-		shutdownTimeout: cfg.GracefulShutdownTimeout,
+		server:                     s,
+		router:                     r,
+		serviceList:                serviceList,
+		healthCheck:                hc,
+		reindexRequestedConsumer:   reindexRequestedConsumer,
+		reindexTaskCountsConsumer:  reindexTaskCountsConsumer,
+		searchDataImportedConsumer: searchDataImportedConsumer,
+		shutdownTimeout:            cfg.GracefulShutdownTimeout,
 	}, nil
 }
 
@@ -104,16 +130,28 @@ func (svc *Service) Close(ctx context.Context) error {
 			svc.healthCheck.Stop()
 		}
 
-		// If kafka consumer exists, stop listening to it.
+		// If reindexRequestedConsumer exists, stop listening to it.
 		// This will automatically stop the event consumer loops and no more messages will be processed.
-		// The kafka consumer will be closed after the service shuts down.
-		if svc.serviceList.KafkaConsumer {
-			log.Info(ctx, "stopping kafka consumer listener")
-			if err := svc.consumer.Stop(); err != nil {
-				log.Error(ctx, "error stopping kafka consumer listener", err)
+		// The kafka reindexRequestedConsumer will be closed after the service shuts down.
+		if svc.serviceList.KafkaConsumers {
+			log.Info(ctx, "stopping reindex requested consumer listener")
+			if err := svc.reindexRequestedConsumer.Stop(); err != nil {
+				log.Error(ctx, "error stopping reindex requested consumer listener", err)
 				hasShutdownError = true
 			}
-			log.Info(ctx, "stopped kafka consumer listener")
+			log.Info(ctx, "stopped reindex requested consumer listener")
+			log.Info(ctx, "stopping reindex task counts consumer listener")
+			if err := svc.reindexTaskCountsConsumer.Stop(); err != nil {
+				log.Error(ctx, "error stopping reindex task counts consumer listener", err)
+				hasShutdownError = true
+			}
+			log.Info(ctx, "stopped reindex task counts consumer listener")
+			log.Info(ctx, "stopping search data imported consumer listener")
+			if err := svc.searchDataImportedConsumer.Stop(); err != nil {
+				log.Error(ctx, "error stopping search data imported consumer listener", err)
+				hasShutdownError = true
+			}
+			log.Info(ctx, "stopped search data imported consumer listener")
 		}
 
 		// stop any incoming requests before closing any outbound connections
@@ -123,13 +161,25 @@ func (svc *Service) Close(ctx context.Context) error {
 		}
 
 		// If kafka consumer exists, close it.
-		if svc.serviceList.KafkaConsumer {
-			log.Info(ctx, "closing kafka consumer")
-			if err := svc.consumer.Close(ctx); err != nil {
-				log.Error(ctx, "error closing kafka consumer", err)
+		if svc.serviceList.KafkaConsumers {
+			log.Info(ctx, "closing reindex requested consumer")
+			if err := svc.reindexRequestedConsumer.Close(ctx); err != nil {
+				log.Error(ctx, "error closing reindex requested consumer", err)
 				hasShutdownError = true
 			}
-			log.Info(ctx, "closed kafka consumer")
+			log.Info(ctx, "closed reindex requested consumer")
+			log.Info(ctx, "closing reindex task counts consumer")
+			if err := svc.reindexTaskCountsConsumer.Close(ctx); err != nil {
+				log.Error(ctx, "error closing reindex task counts consumer", err)
+				hasShutdownError = true
+			}
+			log.Info(ctx, "closed reindex task counts consumer")
+			log.Info(ctx, "closing search data imported consumer")
+			if err := svc.searchDataImportedConsumer.Close(ctx); err != nil {
+				log.Error(ctx, "error closing search data imported consumer", err)
+				hasShutdownError = true
+			}
+			log.Info(ctx, "closed search data imported consumer")
 		}
 
 		if !hasShutdownError {
@@ -152,13 +202,23 @@ func (svc *Service) Close(ctx context.Context) error {
 
 func registerCheckers(ctx context.Context,
 	hc HealthChecker,
-	consumer kafka.IConsumerGroup) (err error) {
+	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer kafka.IConsumerGroup) (err error) {
 
 	hasErrors := false
 
-	if err := hc.AddCheck("Kafka consumer", consumer.Checker); err != nil {
+	if err := hc.AddCheck("Reindex requested consumer", reindexRequestedConsumer.Checker); err != nil {
 		hasErrors = true
-		log.Error(ctx, "error adding check for Kafka", err)
+		log.Error(ctx, "error adding check for reindex requested consumer", err)
+	}
+
+	if err := hc.AddCheck("Reindex task counts consumer", reindexTaskCountsConsumer.Checker); err != nil {
+		hasErrors = true
+		log.Error(ctx, "error adding check for reindex task counts consumer", err)
+	}
+
+	if err := hc.AddCheck("Search data imported consumer", searchDataImportedConsumer.Checker); err != nil {
+		hasErrors = true
+		log.Error(ctx, "error adding check for search data imported consumer", err)
 	}
 
 	if hasErrors {

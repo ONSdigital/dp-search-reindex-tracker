@@ -29,8 +29,8 @@ var (
 	errHealthcheck   = errors.New("healthCheck error")
 )
 
-var funcDoGetKafkaConsumerErr = func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, error) {
-	return nil, errKafkaConsumer
+var funcDoGetKafkaConsumersErr = func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+	return nil, nil, nil, errKafkaConsumer
 }
 
 var funcDoGetHealthcheckErr = func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
@@ -64,8 +64,8 @@ func TestRun(t *testing.T) {
 			},
 		}
 
-		funcDoGetKafkaConsumerOk := func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, error) {
-			return consumerMock, nil
+		funcDoGetKafkaConsumersOk := func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+			return consumerMock, consumerMock, consumerMock, nil
 		}
 
 		funcDoGetHealthcheckOk := func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
@@ -78,8 +78,8 @@ func TestRun(t *testing.T) {
 
 		Convey("Given that initialising Kafka consumer returns an error", func() {
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc:    funcDoGetHTTPServerNil,
-				DoGetKafkaConsumerFunc: funcDoGetKafkaConsumerErr,
+				DoGetHTTPServerFunc:     funcDoGetHTTPServerNil,
+				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersErr,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -87,16 +87,16 @@ func TestRun(t *testing.T) {
 
 			Convey("Then service Run fails with the same error and the flag is not set", func() {
 				So(err, ShouldResemble, errKafkaConsumer)
-				So(svcList.KafkaConsumer, ShouldBeFalse)
+				So(svcList.KafkaConsumers, ShouldBeFalse)
 				So(svcList.HealthCheck, ShouldBeFalse)
 			})
 		})
 
 		Convey("Given that initialising healthcheck returns an error", func() {
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc:    funcDoGetHTTPServerNil,
-				DoGetHealthCheckFunc:   funcDoGetHealthcheckErr,
-				DoGetKafkaConsumerFunc: funcDoGetKafkaConsumerOk,
+				DoGetHTTPServerFunc:     funcDoGetHTTPServerNil,
+				DoGetHealthCheckFunc:    funcDoGetHealthcheckErr,
+				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -104,7 +104,7 @@ func TestRun(t *testing.T) {
 
 			Convey("Then service Run fails with the same error and the flag is not set", func() {
 				So(err, ShouldResemble, errHealthcheck)
-				So(svcList.KafkaConsumer, ShouldBeTrue)
+				So(svcList.KafkaConsumers, ShouldBeTrue)
 				So(svcList.HealthCheck, ShouldBeFalse)
 			})
 		})
@@ -112,9 +112,9 @@ func TestRun(t *testing.T) {
 		Convey("Given that all dependencies are successfully initialised", func() {
 
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc:    funcDoGetHTTPServer,
-				DoGetHealthCheckFunc:   funcDoGetHealthcheckOk,
-				DoGetKafkaConsumerFunc: funcDoGetKafkaConsumerOk,
+				DoGetHTTPServerFunc:     funcDoGetHTTPServer,
+				DoGetHealthCheckFunc:    funcDoGetHealthcheckOk,
+				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -123,13 +123,15 @@ func TestRun(t *testing.T) {
 
 			Convey("Then service Run succeeds and all the flags are set", func() {
 				So(err, ShouldBeNil)
-				So(svcList.KafkaConsumer, ShouldBeTrue)
+				So(svcList.KafkaConsumers, ShouldBeTrue)
 				So(svcList.HealthCheck, ShouldBeTrue)
 			})
 
 			Convey("The checkers are registered and the healthcheck and http server started", func() {
-				So(len(hcMock.AddCheckCalls()), ShouldEqual, 1)
-				So(hcMock.AddCheckCalls()[0].Name, ShouldResemble, "Kafka consumer")
+				So(len(hcMock.AddCheckCalls()), ShouldEqual, 3)
+				So(hcMock.AddCheckCalls()[0].Name, ShouldResemble, "Reindex requested consumer")
+				So(hcMock.AddCheckCalls()[1].Name, ShouldResemble, "Reindex task counts consumer")
+				So(hcMock.AddCheckCalls()[2].Name, ShouldResemble, "Search data imported consumer")
 				So(len(initMock.DoGetHTTPServerCalls()), ShouldEqual, 1)
 				So(initMock.DoGetHTTPServerCalls()[0].BindAddr, ShouldEqual, "localhost:28500")
 				So(len(hcMock.StartCalls()), ShouldEqual, 1)
@@ -151,7 +153,7 @@ func TestRun(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMockAddFail, nil
 				},
-				DoGetKafkaConsumerFunc: funcDoGetKafkaConsumerOk,
+				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -161,9 +163,11 @@ func TestRun(t *testing.T) {
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldResemble, fmt.Sprintf("unable to register checkers: %s", errAddheckFail.Error()))
 				So(svcList.HealthCheck, ShouldBeTrue)
-				So(svcList.KafkaConsumer, ShouldBeTrue)
-				So(len(hcMockAddFail.AddCheckCalls()), ShouldEqual, 1)
-				So(hcMockAddFail.AddCheckCalls()[0].Name, ShouldResemble, "Kafka consumer")
+				So(svcList.KafkaConsumers, ShouldBeTrue)
+				So(len(hcMockAddFail.AddCheckCalls()), ShouldEqual, 3)
+				So(hcMockAddFail.AddCheckCalls()[0].Name, ShouldResemble, "Reindex requested consumer")
+				So(hcMockAddFail.AddCheckCalls()[1].Name, ShouldResemble, "Reindex task counts consumer")
+				So(hcMockAddFail.AddCheckCalls()[2].Name, ShouldResemble, "Search data imported consumer")
 			})
 		})
 	})
@@ -209,8 +213,8 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
-				DoGetKafkaConsumerFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, error) {
-					return consumerMock, nil
+				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+					return consumerMock, consumerMock, consumerMock, nil
 				},
 			}
 
@@ -222,7 +226,7 @@ func TestClose(t *testing.T) {
 			err = svc.Close(context.Background())
 			So(err, ShouldBeNil)
 			So(len(hcMock.StopCalls()), ShouldEqual, 1)
-			So(len(consumerMock.CloseCalls()), ShouldEqual, 1)
+			So(len(consumerMock.CloseCalls()), ShouldEqual, 3)
 			So(len(serverMock.ShutdownCalls()), ShouldEqual, 1)
 		})
 
@@ -240,8 +244,8 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
-				DoGetKafkaConsumerFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, error) {
-					return consumerMock, nil
+				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+					return consumerMock, consumerMock, consumerMock, nil
 				},
 			}
 

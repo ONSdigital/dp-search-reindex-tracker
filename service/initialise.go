@@ -12,17 +12,17 @@ import (
 
 // ExternalServiceList holds the initialiser and initialisation state of external services.
 type ExternalServiceList struct {
-	HealthCheck   bool
-	KafkaConsumer bool
-	Init          Initialiser
+	HealthCheck    bool
+	KafkaConsumers bool
+	Init           Initialiser
 }
 
 // NewServiceList creates a new service list with the provided initialiser
 func NewServiceList(initialiser Initialiser) *ExternalServiceList {
 	return &ExternalServiceList{
-		HealthCheck:   false,
-		KafkaConsumer: false,
-		Init:          initialiser,
+		HealthCheck:    false,
+		KafkaConsumers: false,
+		Init:           initialiser,
 	}
 }
 
@@ -35,14 +35,14 @@ func (e *ExternalServiceList) GetHTTPServer(bindAddr string, router http.Handler
 	return s
 }
 
-// GetKafkaConsumer creates a Kafka consumer and sets the consumer flag to true
-func (e *ExternalServiceList) GetKafkaConsumer(ctx context.Context, cfg *config.Config) (dpkafka.IConsumerGroup, error) {
-	consumer, err := e.Init.DoGetKafkaConsumer(ctx, &cfg.KafkaConfig)
+// GetKafkaConsumers creates three Kafka consumers and sets the consumer flag to true
+func (e *ExternalServiceList) GetKafkaConsumers(ctx context.Context, cfg *config.Config) (dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, error) {
+	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := e.Init.DoGetKafkaConsumers(ctx, &cfg.KafkaConfig)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-	e.KafkaConsumer = true
-	return consumer, nil
+	e.KafkaConsumers = true
+	return reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, nil
 }
 
 // GetHealthCheck creates a healthcheck with versionInfo and sets teh HealthCheck flag to true
@@ -62,36 +62,84 @@ func (e *Init) DoGetHTTPServer(bindAddr string, router http.Handler) HTTPServer 
 	return s
 }
 
-// DoGetKafkaConsumer returns a Kafka Consumer group
-func (e *Init) DoGetKafkaConsumer(ctx context.Context, kafkaCfg *config.KafkaConfig) (dpkafka.IConsumerGroup, error) {
+// DoGetKafkaConsumers returns three Kafka Consumer groups:
+// - reindexRequestedConsumer
+// - reindexTaskCountsConsumer
+func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, error) {
 	kafkaOffset := dpkafka.OffsetNewest
 	if kafkaCfg.OffsetOldest {
 		kafkaOffset = dpkafka.OffsetOldest
 	}
-	cgConfig := &dpkafka.ConsumerGroupConfig{
+	reindexRequestedCgConfig := &dpkafka.ConsumerGroupConfig{
 		BrokerAddrs:  kafkaCfg.Brokers,
-		GroupName:    kafkaCfg.HelloCalledGroup,
+		GroupName:    kafkaCfg.ReindexRequestedGroup,
 		KafkaVersion: &kafkaCfg.Version,
 		Offset:       &kafkaOffset,
-		Topic:        kafkaCfg.HelloCalledTopic,
+		Topic:        kafkaCfg.ReindexRequestedTopic,
 	}
 	if kafkaCfg.SecProtocol == config.KafkaTLSProtocolFlag {
-		cgConfig.SecurityConfig = dpkafka.GetSecurityConfig(
+		reindexRequestedCgConfig.SecurityConfig = dpkafka.GetSecurityConfig(
 			kafkaCfg.SecCACerts,
 			kafkaCfg.SecClientCert,
 			kafkaCfg.SecClientKey,
 			kafkaCfg.SecSkipVerify,
 		)
 	}
-	kafkaConsumer, err := dpkafka.NewConsumerGroup(
+	reindexRequestedConsumer, err := dpkafka.NewConsumerGroup(
 		ctx,
-		cgConfig,
+		reindexRequestedCgConfig,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	return kafkaConsumer, nil
+	reindexTaskCountsCgConfig := &dpkafka.ConsumerGroupConfig{
+		BrokerAddrs:  kafkaCfg.Brokers,
+		GroupName:    kafkaCfg.ReindexTaskCountsGroup,
+		KafkaVersion: &kafkaCfg.Version,
+		Offset:       &kafkaOffset,
+		Topic:        kafkaCfg.ReindexTaskCountsTopic,
+	}
+	if kafkaCfg.SecProtocol == config.KafkaTLSProtocolFlag {
+		reindexTaskCountsCgConfig.SecurityConfig = dpkafka.GetSecurityConfig(
+			kafkaCfg.SecCACerts,
+			kafkaCfg.SecClientCert,
+			kafkaCfg.SecClientKey,
+			kafkaCfg.SecSkipVerify,
+		)
+	}
+	reindexTaskCountsConsumer, err := dpkafka.NewConsumerGroup(
+		ctx,
+		reindexTaskCountsCgConfig,
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	searchDataImportedCgConfig := &dpkafka.ConsumerGroupConfig{
+		BrokerAddrs:  kafkaCfg.Brokers,
+		GroupName:    kafkaCfg.SearchDataImportedGroup,
+		KafkaVersion: &kafkaCfg.Version,
+		Offset:       &kafkaOffset,
+		Topic:        kafkaCfg.SearchDataImportedTopic,
+	}
+	if kafkaCfg.SecProtocol == config.KafkaTLSProtocolFlag {
+		searchDataImportedCgConfig.SecurityConfig = dpkafka.GetSecurityConfig(
+			kafkaCfg.SecCACerts,
+			kafkaCfg.SecClientCert,
+			kafkaCfg.SecClientKey,
+			kafkaCfg.SecSkipVerify,
+		)
+	}
+	searchDataImportedConsumer, err := dpkafka.NewConsumerGroup(
+		ctx,
+		searchDataImportedCgConfig,
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, nil
 }
 
 // DoGetHealthCheck creates a healthcheck with versionInfo
