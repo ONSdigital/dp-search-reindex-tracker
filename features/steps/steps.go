@@ -2,7 +2,6 @@ package steps
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -39,8 +38,6 @@ func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(observationEvents)
 
 	signals := registerInterrupt()
 
