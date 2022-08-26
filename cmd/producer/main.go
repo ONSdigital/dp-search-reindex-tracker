@@ -10,7 +10,6 @@ import (
 	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
-	"github.com/ONSdigital/dp-search-reindex-tracker/schema"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -53,7 +52,7 @@ func main() {
 		e := scanEvent(scanner)
 		log.Info(ctx, "sending hello-called event", log.Data{"helloCalledEvent": e})
 
-		bytes, err := schema.HelloCalledEvent.Marshal(e)
+		bytes, err := event.HelloCalledSchema.Marshal(e)
 		if err != nil {
 			log.Fatal(ctx, "hello-called event error", err)
 			os.Exit(1)
@@ -66,7 +65,7 @@ func main() {
 }
 
 // scanEvent creates a HelloCalled event according to the user input
-func scanEvent(scanner *bufio.Scanner) *event.HelloCalled {
+func scanEvent(scanner *bufio.Scanner) *event.HelloCalledModel {
 	fmt.Println("--- [Send Kafka HelloCalled] ---")
 
 	fmt.Println("Please type the recipient name")
@@ -74,7 +73,7 @@ func scanEvent(scanner *bufio.Scanner) *event.HelloCalled {
 	scanner.Scan()
 	name := scanner.Text()
 
-	return &event.HelloCalled{
+	return &event.HelloCalledModel{
 		RecipientName: name,
 	}
 }

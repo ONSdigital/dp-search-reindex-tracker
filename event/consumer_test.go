@@ -3,32 +3,24 @@ package event_test
 import (
 	"context"
 	"errors"
-	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"sync"
 	"testing"
+
+	"github.com/ONSdigital/dp-search-reindex-tracker/config"
+	"github.com/ONSdigital/dp-search-reindex-tracker/event/mock"
 
 	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
-	"github.com/ONSdigital/dp-search-reindex-tracker/event/mock"
-	"github.com/ONSdigital/dp-search-reindex-tracker/schema"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var testCtx = context.Background()
 
-var errHandler = errors.New("Handler Error")
+var errHandler = errors.New("handler error")
 
-var testEvent = event.HelloCalled{
+var testEvent = event.HelloCalledModel{
 	RecipientName: "World",
-}
-
-// kafkaStubConsumer mock which exposes Channels function returning empty channels
-// to be used on tests that are not supposed to receive any kafka message
-var kafkaStubConsumer = &kafkatest.IConsumerGroupMock{
-	ChannelsFunc: func() *kafka.ConsumerGroupChannels {
-		return &kafka.ConsumerGroupChannels{}
-	},
 }
 
 // TODO: remove or replace hello called logic with app specific
@@ -43,10 +35,16 @@ func TestConsume(t *testing.T) {
 
 		handlerWg := &sync.WaitGroup{}
 		mockEventHandler := &mock.HandlerMock{
-			HandleFunc: func(ctx context.Context, config *config.Config, event *event.HelloCalled) error {
+			HandleFunc: func(ctx context.Context, config *config.Config, event *event.HelloCalledModel) error {
 				defer handlerWg.Done()
 				return nil
 			},
+		}
+
+		mockEvent := &event.KafkaConsumerEvent[event.HelloCalledModel]{
+			ConsumerGroup: mockConsumer,
+			Handler:       mockEventHandler,
+			Schema:        event.HelloCalledSchema,
 		}
 
 		Convey("And a kafka message with the valid schema being sent to the Upstream channel", func() {
@@ -57,7 +55,7 @@ func TestConsume(t *testing.T) {
 			Convey("When consume message is called", func() {
 
 				handlerWg.Add(1)
-				event.Consume(testCtx, mockConsumer, mockEventHandler, &config.Config{KafkaConfig: config.KafkaConfig{NumWorkers: 1}})
+				event.Consume(testCtx, &config.Config{KafkaConfig: config.KafkaConfig{NumWorkers: 1}}, mockEvent)
 				handlerWg.Wait()
 
 				Convey("An event is sent to the mockEventHandler ", func() {
@@ -83,7 +81,7 @@ func TestConsume(t *testing.T) {
 			Convey("When consume messages is called", func() {
 
 				handlerWg.Add(1)
-				event.Consume(testCtx, mockConsumer, mockEventHandler, &config.Config{KafkaConfig: config.KafkaConfig{NumWorkers: 1}})
+				event.Consume(testCtx, &config.Config{KafkaConfig: config.KafkaConfig{NumWorkers: 1}}, mockEvent)
 				handlerWg.Wait()
 
 				Convey("Only the valid event is sent to the mockEventHandler ", func() {
@@ -103,17 +101,19 @@ func TestConsume(t *testing.T) {
 		})
 
 		Convey("With a failing handler and a kafka message with the valid schema being sent to the Upstream channel", func() {
-			mockEventHandler.HandleFunc = func(ctx context.Context, config *config.Config, event *event.HelloCalled) error {
+			mockEventHandler.HandleFunc = func(ctx context.Context, config *config.Config, event *event.HelloCalledModel) error {
 				defer handlerWg.Done()
 				return errHandler
 			}
+			mockEvent.Handler = mockEventHandler
+
 			message := kafkatest.NewMessage(marshal(testEvent), 0)
 			mockConsumer.Channels().Upstream <- message
 
 			Convey("When consume message is called", func() {
 
 				handlerWg.Add(1)
-				event.Consume(testCtx, mockConsumer, mockEventHandler, &config.Config{KafkaConfig: config.KafkaConfig{NumWorkers: 1}})
+				event.Consume(testCtx, &config.Config{KafkaConfig: config.KafkaConfig{NumWorkers: 1}}, mockEvent)
 				handlerWg.Wait()
 
 				Convey("An event is sent to the mockEventHandler ", func() {
@@ -132,8 +132,8 @@ func TestConsume(t *testing.T) {
 }
 
 // marshal helper method to marshal a event into a []byte
-func marshal(event event.HelloCalled) []byte {
-	bytes, err := schema.HelloCalledEvent.Marshal(event)
+func marshal(e event.HelloCalledModel) []byte {
+	bytes, err := event.HelloCalledSchema.Marshal(e)
 	So(err, ShouldBeNil)
 	return bytes
 }

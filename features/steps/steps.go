@@ -2,6 +2,7 @@ package steps
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
-	"github.com/ONSdigital/dp-search-reindex-tracker/schema"
 	"github.com/ONSdigital/dp-search-reindex-tracker/service"
 	"github.com/cucumber/godog"
 	"github.com/rdumont/assistdog"
@@ -40,6 +40,8 @@ func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
 		return err
 	}
 
+	fmt.Println(observationEvents)
+
 	signals := registerInterrupt()
 
 	// run application in separate goroutine
@@ -62,22 +64,22 @@ func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
 	return nil
 }
 
-func (c *Component) convertToHelloEvents(table *godog.Table) ([]*event.HelloCalled, error) {
+func (c *Component) convertToHelloEvents(table *godog.Table) ([]*event.HelloCalledModel, error) {
 	assist := assistdog.NewDefault()
-	events, err := assist.CreateSlice(&event.HelloCalled{}, table)
+	events, err := assist.CreateSlice(&event.HelloCalledModel{}, table)
 	if err != nil {
 		return nil, err
 	}
-	return events.([]*event.HelloCalled), nil
+	return events.([]*event.HelloCalledModel), nil
 }
 
-func (c *Component) sendToConsumer(e *event.HelloCalled) error {
-	bytes, err := schema.HelloCalledEvent.Marshal(e)
+func (c *Component) sendToConsumer(e *event.HelloCalledModel) error {
+	bytes, err := event.HelloCalledSchema.Marshal(e)
 	if err != nil {
 		return err
 	}
 
-	c.reindexRequestedConsumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
+	c.reindexTaskCountsConsumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
 	return nil
 
 }
