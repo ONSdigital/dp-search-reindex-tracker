@@ -5,9 +5,9 @@ import (
 	"github.com/ONSdigital/go-ns/avro"
 )
 
-type KafkaConsumerEvent[model KafkaAvroModel] struct {
+type KafkaConsumerEvent[M KafkaAvroModel] struct {
 	ConsumerGroup kafka.IConsumerGroup
-	Handler       Handler[model]
+	Handler       Handler[M]
 	Schema        *avro.Schema
 }
 

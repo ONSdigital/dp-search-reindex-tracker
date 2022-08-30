@@ -13,8 +13,8 @@ import (
 
 // TODO: remove or replace hello called logic with app specific
 // Handler represents a handler for processing a single event.
-type Handler[kafkaTopicModel KafkaAvroModel] interface {
-	Handle(ctx context.Context, cfg *config.Config, topicModel *kafkaTopicModel) error
+type Handler[M KafkaAvroModel] interface {
+	Handle(ctx context.Context, cfg *config.Config, topicModel *M) error
 }
 
 // TODO: remove hello called example handler

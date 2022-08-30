@@ -6,8 +6,8 @@ import (
 )
 
 // unmarshal converts a event instance to []byte.
-func unmarshal[topicModel KafkaAvroModel](topicSchema *avro.Schema, message kafka.Message) (*topicModel, error) {
-	var event topicModel
+func unmarshal[M KafkaAvroModel](topicSchema *avro.Schema, message kafka.Message) (*M, error) {
+	var event M
 	err := topicSchema.Unmarshal(message.GetData(), &event)
 	return &event, err
 }

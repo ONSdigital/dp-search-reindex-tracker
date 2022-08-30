@@ -9,7 +9,7 @@ import (
 )
 
 // Consume converts messages to event instances, and pass the event to the provided handler.
-func Consume[topicModel KafkaAvroModel](ctx context.Context, cfg *config.Config, topicEvent *KafkaConsumerEvent[topicModel]) {
+func Consume[M KafkaAvroModel](ctx context.Context, cfg *config.Config, topicEvent *KafkaConsumerEvent[M]) {
 	// consume loop, to be executed by each worker
 	var consume = func(workerID int) {
 		for {
@@ -37,10 +37,10 @@ func Consume[topicModel KafkaAvroModel](ctx context.Context, cfg *config.Config,
 
 // processMessage unmarshals the provided kafka message into an event and calls the handler.
 // After the message is handled, it is committed.
-func processMessage[topicModel KafkaAvroModel](ctx context.Context, cfg *config.Config, topicEvent *KafkaConsumerEvent[topicModel], message kafka.Message) {
+func processMessage[M KafkaAvroModel](ctx context.Context, cfg *config.Config, topicEvent *KafkaConsumerEvent[M], message kafka.Message) {
 
 	// unmarshal - commit on failure (consuming the message again would result in the same error)
-	event, err := unmarshal[topicModel](topicEvent.Schema, message)
+	event, err := unmarshal[M](topicEvent.Schema, message)
 	if err != nil {
 		logData := log.Data{
 			"schema":  topicEvent.Schema,
