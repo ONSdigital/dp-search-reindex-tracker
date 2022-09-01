@@ -19,8 +19,8 @@ type ReindexRequestedHandler struct {
 
 // Handle takes a single event
 func (h *ReindexRequestedHandler) Handle(ctx context.Context, cfg *config.Config, event *ReindexRequestedModel) error {
-	// TO-DO: add job id to in-memory variable for global lookup e.g. map[<job_id>] bool
-	// TO-DO: make a request to the Search Reindex API (via API router) to update state to in-progress for the job
+	// TODO: add job id to in-memory variable for global lookup e.g. map[<job_id>] bool
+	// TODO: make a request to the Search Reindex API (via API router) to update state to in-progress for the job
 	return nil
 }
 

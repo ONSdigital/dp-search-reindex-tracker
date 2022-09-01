@@ -26,7 +26,6 @@ var testReindexRequestedEvent = event.ReindexRequestedModel{
 	TraceID:     "5678",
 }
 
-// TODO: remove or replace hello called logic with app specific
 func TestConsume(t *testing.T) {
 
 	Convey("Given kafka consumer and event handler mocks", t, func() {
