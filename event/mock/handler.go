@@ -12,7 +12,7 @@ import (
 
 // Ensure, that HandlerMock does implement event.Handler.
 // If this is not the case, regenerate this file with moq.
-var _ event.Handler[event.HelloCalledModel] = &HandlerMock{}
+var _ event.Handler[event.ReindexRequestedModel] = &HandlerMock{}
 
 // HandlerMock is a mock implementation of event.Handler.
 //
@@ -20,7 +20,7 @@ var _ event.Handler[event.HelloCalledModel] = &HandlerMock{}
 //
 // 		// make and configure a mocked event.Handler
 // 		mockedHandler := &HandlerMock{
-// 			HandleFunc: func(ctx context.Context, cfg *config.Config, helloCalled *event.HelloCalled) error {
+// 			HandleFunc: func(ctx context.Context, cfg *config.Config, reindexRequested *event.ReindexRequested) error {
 // 				panic("mock out the Handle method")
 // 			},
 // 		}
@@ -31,7 +31,7 @@ var _ event.Handler[event.HelloCalledModel] = &HandlerMock{}
 // 	}
 type HandlerMock struct {
 	// HandleFunc mocks the Handle method.
-	HandleFunc func(ctx context.Context, cfg *config.Config, helloCalled *event.HelloCalledModel) error
+	HandleFunc func(ctx context.Context, cfg *config.Config, reindexRequested *event.ReindexRequestedModel) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -41,31 +41,31 @@ type HandlerMock struct {
 			Ctx context.Context
 			// Cfg is the cfg argument value.
 			Cfg *config.Config
-			// HelloCalled is the helloCalled argument value.
-			HelloCalled *event.HelloCalledModel
+			// ReindexRequested is the reindexRequested argument value.
+			ReindexRequested *event.ReindexRequestedModel
 		}
 	}
 	lockHandle sync.RWMutex
 }
 
 // Handle calls HandleFunc.
-func (mock *HandlerMock) Handle(ctx context.Context, cfg *config.Config, helloCalled *event.HelloCalledModel) error {
+func (mock *HandlerMock) Handle(ctx context.Context, cfg *config.Config, reindexRequested *event.ReindexRequestedModel) error {
 	if mock.HandleFunc == nil {
 		panic("HandlerMock.HandleFunc: method is nil but Handler.Handle was just called")
 	}
 	callInfo := struct {
 		Ctx         context.Context
 		Cfg         *config.Config
-		HelloCalled *event.HelloCalledModel
+		ReindexRequested *event.ReindexRequestedModel
 	}{
 		Ctx:         ctx,
 		Cfg:         cfg,
-		HelloCalled: helloCalled,
+		ReindexRequested: reindexRequested,
 	}
 	mock.lockHandle.Lock()
 	mock.calls.Handle = append(mock.calls.Handle, callInfo)
 	mock.lockHandle.Unlock()
-	return mock.HandleFunc(ctx, cfg, helloCalled)
+	return mock.HandleFunc(ctx, cfg, reindexRequested)
 }
 
 // HandleCalls gets all the calls that were made to Handle.
@@ -74,12 +74,12 @@ func (mock *HandlerMock) Handle(ctx context.Context, cfg *config.Config, helloCa
 func (mock *HandlerMock) HandleCalls() []struct {
 	Ctx         context.Context
 	Cfg         *config.Config
-	HelloCalled *event.HelloCalledModel
+	ReindexRequested *event.ReindexRequestedModel
 } {
 	var calls []struct {
 		Ctx         context.Context
 		Cfg         *config.Config
-		HelloCalled *event.HelloCalledModel
+		ReindexRequested *event.ReindexRequestedModel
 	}
 	mock.lockHandle.RLock()
 	calls = mock.calls.Handle

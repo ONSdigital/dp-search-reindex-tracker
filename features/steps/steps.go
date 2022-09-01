@@ -2,55 +2,68 @@ package steps
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
 	"github.com/ONSdigital/dp-search-reindex-tracker/service"
+	"github.com/ONSdigital/go-ns/avro"
 	"github.com/cucumber/godog"
 	"github.com/rdumont/assistdog"
-	"github.com/stretchr/testify/assert"
 )
 
-func (c *Component) RegisterSteps(ctx *godog.ScenarioContext) {
-	ctx.Step(`^these hello events are consumed:$`, c.theseHelloEventsAreConsumed)
-	ctx.Step(`^I should receive a hello-world response$`, c.iShouldReceiveAHelloworldResponse)
+func (c *SearchReindexTrackerComponent) RegisterSteps(ctx *godog.ScenarioContext) {
+	ctx.Step(`^these reindex-requested events are consumed:$`, c.theseReindexRequestedEventsAreConsumed)
+	ctx.Step(`^these reindex-task-counts events are consumed:$`, c.theseReindexTaskCountsEventsAreConsumed)
+	ctx.Step(`^these search-data-import events are consumed:$`, c.theseSearchDataImportEventsAreConsumed)
+	ctx.Step(`^nothing happens`, c.nothingHappens)
 }
 
-func (c *Component) iShouldReceiveAHelloworldResponse() error {
-	content, err := ioutil.ReadFile(c.cfg.OutputFilePath)
-	if err != nil {
-		return err
-	}
-
-	assert.Equal(c, "Hello, Tim!", string(content))
-
-	return c.StepError()
+func (c *SearchReindexTrackerComponent) nothingHappens() error {
+	return nil
 }
 
-func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
+func (c *SearchReindexTrackerComponent) theseReindexRequestedEventsAreConsumed(table *godog.Table) error {
+	return theseEventsAreConsumed[event.ReindexRequestedModel](c, event.ReindexRequestedSchema, c.reindexRequestedConsumer, table)
+}
 
-	observationEvents, err := c.convertToHelloEvents(table)
+func (c *SearchReindexTrackerComponent) theseReindexTaskCountsEventsAreConsumed(table *godog.Table) error {
+	return theseEventsAreConsumed[event.ReindexTaskCountsModel](c, event.ReindexTaskCountsSchema, c.reindexTaskCountsConsumer, table)
+}
+
+func (c *SearchReindexTrackerComponent) theseSearchDataImportEventsAreConsumed(table *godog.Table) error {
+	return theseEventsAreConsumed[event.SearchDataImportModel](c, event.SearchDataImportSchema, c.searchDataImportedConsumer, table)
+}
+
+func theseEventsAreConsumed[M event.KafkaAvroModel](c *SearchReindexTrackerComponent, schema *avro.Schema, consumer kafka.IConsumerGroup, table *godog.Table) error {
+	ctx := context.Background()
+
+	observationEvents, err := convertToEvents[M](table)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert to events - err: %v", err)
 	}
 
 	signals := registerInterrupt()
 
 	// run application in separate goroutine
 	go func() {
-		c.svc, err = service.Run(context.Background(), c.serviceList, "", "", "", c.errorChan)
+		c.svc, err = service.Run(ctx, c.serviceList, "", "", "", c.errorChan)
 	}()
 
 	// consume extracted observations
 	for _, e := range observationEvents {
-		if err := c.sendToConsumer(e); err != nil {
-			return err
+		bytes, err := schema.Marshal(e)
+		if err != nil {
+			return fmt.Errorf("failed to marshal events - err: %v", err)
 		}
+
+		consumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
 	}
 
 	time.Sleep(300 * time.Millisecond)
@@ -61,24 +74,24 @@ func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
 	return nil
 }
 
-func (c *Component) convertToHelloEvents(table *godog.Table) ([]*event.HelloCalledModel, error) {
+func convertToEvents[M event.KafkaAvroModel](table *godog.Table) ([]*M, error) {
+	var emptyEventModel M
 	assist := assistdog.NewDefault()
-	events, err := assist.CreateSlice(&event.HelloCalledModel{}, table)
+
+	// register parser for handling int32 types as the default assist does not handle int32 types
+	assist.RegisterParser(int32(0), func(raw string) (interface{}, error) {
+		valInt, err := strconv.Atoi(raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to register int32 parser in assist - err: %v", err)
+		}
+		return int32(valInt), nil
+	})
+
+	events, err := assist.CreateSlice(&emptyEventModel, table)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create events - err: %v", err)
 	}
-	return events.([]*event.HelloCalledModel), nil
-}
-
-func (c *Component) sendToConsumer(e *event.HelloCalledModel) error {
-	bytes, err := event.HelloCalledSchema.Marshal(e)
-	if err != nil {
-		return err
-	}
-
-	c.reindexTaskCountsConsumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
-	return nil
-
+	return events.([]*M), nil
 }
 
 func registerInterrupt() chan os.Signal {

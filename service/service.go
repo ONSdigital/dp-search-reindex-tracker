@@ -63,7 +63,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	reindexTaskCountsEventOptions := &event.KafkaEventOptions{
 		ConsumerGroup: reindexTaskCountsConsumer,
 	}
-	reindexTaskCountsEvent := event.GetHelloCalled(reindexTaskCountsEventOptions)
+	reindexTaskCountsEvent := event.GetReindexTaskCounts(reindexTaskCountsEventOptions)
 	event.Consume(ctx, cfg, reindexTaskCountsEvent)
 
 	if consumerStartErr := reindexTaskCountsConsumer.Start(); consumerStartErr != nil {
@@ -76,7 +76,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	searchDataImportedEventOptions := &event.KafkaEventOptions{
 		ConsumerGroup: searchDataImportedConsumer,
 	}
-	searchDataImportedEvent := event.GetHelloCalled(searchDataImportedEventOptions)
+	searchDataImportedEvent := event.GetSearchDataImport(searchDataImportedEventOptions)
 	event.Consume(ctx, cfg, searchDataImportedEvent)
 
 	if consumerStartErr := searchDataImportedConsumer.Start(); consumerStartErr != nil {

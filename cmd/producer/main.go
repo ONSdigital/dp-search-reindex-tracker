@@ -50,11 +50,11 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		e := scanEvent(scanner)
-		log.Info(ctx, "sending hello-called event", log.Data{"helloCalledEvent": e})
+		log.Info(ctx, "sending reindex-requested event", log.Data{"reindexRequestedEvent": e})
 
-		bytes, err := event.HelloCalledSchema.Marshal(e)
+		bytes, err := event.ReindexRequestedSchema.Marshal(e)
 		if err != nil {
-			log.Fatal(ctx, "hello-called event error", err)
+			log.Fatal(ctx, "reindex-requested event error", err)
 			os.Exit(1)
 		}
 
@@ -64,16 +64,18 @@ func main() {
 	}
 }
 
-// scanEvent creates a HelloCalled event according to the user input
-func scanEvent(scanner *bufio.Scanner) *event.HelloCalledModel {
-	fmt.Println("--- [Send Kafka HelloCalled] ---")
+// scanEvent creates a ReindexRequested event according to the user input
+func scanEvent(scanner *bufio.Scanner) *event.ReindexRequestedModel {
+	fmt.Println("--- [Send Kafka ReindexRequested] ---")
 
-	fmt.Println("Please type the recipient name")
+	fmt.Println("Please type the job id")
 	fmt.Printf("$ ")
 	scanner.Scan()
-	name := scanner.Text()
+	jobID := scanner.Text()
 
-	return &event.HelloCalledModel{
-		RecipientName: name,
+	return &event.ReindexRequestedModel{
+		JobID:       jobID,
+		SearchIndex: "test",
+		TraceID:     "trace1234",
 	}
 }
