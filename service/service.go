@@ -39,44 +39,50 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	r := mux.NewRouter()
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
-	// Get Kafka consumer
+	// Get Kafka consumers
 	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := serviceList.GetKafkaConsumers(ctx, cfg)
 	if err != nil {
 		log.Fatal(ctx, "failed to initialise kafka consumers", err)
 		return nil, err
 	}
 
-	// Event Handler for 'Reindex Requested' Kafka Consumer
-	event.Consume(ctx, reindexRequestedConsumer, &event.HelloCalledHandler{}, cfg)
+	// Start 'Reindex Requested' Kafka Consumer
+	reindexRequestedEventOptions := &event.KafkaEventOptions{
+		ConsumerGroup: reindexRequestedConsumer,
+	}
+	reindexRequestedEvent := event.GetReindexRequested(reindexRequestedEventOptions)
+	event.Consume(ctx, cfg, reindexRequestedEvent)
 
 	if consumerStartErr := reindexRequestedConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the reindex requested consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
-
-	// Kafka error logging go-routine
 	reindexRequestedConsumer.LogErrors(ctx)
 
-	// Event Handler for 'Reindex Task Counts' Kafka Consumer
-	event.Consume(ctx, reindexTaskCountsConsumer, &event.HelloCalledHandler{}, cfg)
+	// Start 'Reindex Task Counts' Kafka Consumer
+	reindexTaskCountsEventOptions := &event.KafkaEventOptions{
+		ConsumerGroup: reindexTaskCountsConsumer,
+	}
+	reindexTaskCountsEvent := event.GetReindexTaskCounts(reindexTaskCountsEventOptions)
+	event.Consume(ctx, cfg, reindexTaskCountsEvent)
 
 	if consumerStartErr := reindexTaskCountsConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the reindex task counts consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
-
-	// Kafka error logging go-routine
 	reindexTaskCountsConsumer.LogErrors(ctx)
 
-	// Event Handler for 'Search Data Imported' Kafka Consumer
-	event.Consume(ctx, searchDataImportedConsumer, &event.HelloCalledHandler{}, cfg)
+	// Start 'Search Data Imported' Kafka Consumer
+	searchDataImportedEventOptions := &event.KafkaEventOptions{
+		ConsumerGroup: searchDataImportedConsumer,
+	}
+	searchDataImportedEvent := event.GetSearchDataImport(searchDataImportedEventOptions)
+	event.Consume(ctx, cfg, searchDataImportedEvent)
 
 	if consumerStartErr := searchDataImportedConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the search data imported consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
-
-	// Kafka error logging go-routine
 	searchDataImportedConsumer.LogErrors(ctx)
 
 	// Get HealthCheck
