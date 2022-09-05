@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	kafka "github.com/ONSdigital/dp-kafka/v3"
+	searchReindexAPIClient "github.com/ONSdigital/dp-search-reindex-api/sdk/v1"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -39,6 +41,16 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	r := mux.NewRouter()
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
+	// Get health client for api router
+	routerHealthClient := serviceList.GetHealthClient("api-router", cfg.APIRouterURL)
+
+	// Get search reindex API client
+	searchReindexAPIClient, err := searchReindexAPIClient.NewWithHealthClient(cfg.ServiceAuthToken, routerHealthClient)
+	if err != nil {
+		log.Fatal(ctx, "failed to get search reindex api client", err)
+		return nil, err
+	}
+
 	// Get Kafka consumers
 	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := serviceList.GetKafkaConsumers(ctx, cfg)
 	if err != nil {
@@ -48,7 +60,8 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 
 	// Start 'Reindex Requested' Kafka Consumer
 	reindexRequestedEventOptions := &event.KafkaEventOptions{
-		ConsumerGroup: reindexRequestedConsumer,
+		ConsumerGroup:          reindexRequestedConsumer,
+		SearchReindexAPIClient: searchReindexAPIClient,
 	}
 	reindexRequestedEvent := event.GetReindexRequested(reindexRequestedEventOptions)
 	event.Consume(ctx, cfg, reindexRequestedEvent)
@@ -92,7 +105,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 		return nil, err
 	}
 
-	if err := registerCheckers(ctx, hc, reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer); err != nil {
+	if err := registerCheckers(ctx, hc, routerHealthClient, reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer); err != nil {
 		return nil, errors.Wrap(err, "unable to register checkers")
 	}
 
@@ -207,10 +220,15 @@ func (svc *Service) Close(ctx context.Context) error {
 }
 
 func registerCheckers(ctx context.Context,
-	hc HealthChecker,
+	hc HealthChecker, routerHealthClient *health.Client,
 	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer kafka.IConsumerGroup) (err error) {
 
 	hasErrors := false
+
+	if err = hc.AddCheck("API router", routerHealthClient.Checker); err != nil {
+		hasErrors = true
+		log.Error(ctx, "failed to add API router health checker", err)
+	}
 
 	if err := hc.AddCheck("Reindex requested consumer", reindexRequestedConsumer.Checker); err != nil {
 		hasErrors = true
