@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
@@ -39,6 +40,14 @@ var funcDoGetHealthcheckErr = func(cfg *config.Config, buildTime string, gitComm
 
 var funcDoGetHTTPServerNil = func(bindAddr string, router http.Handler) service.HTTPServer {
 	return nil
+}
+
+var funcDoGetHealthClient = func(name string, url string) *health.Client {
+	return &health.Client{
+		URL:    url,
+		Name:   name,
+		Client: service.NewMockHTTPClient(&http.Response{}, nil),
+	}
 }
 
 func TestRun(t *testing.T) {
@@ -79,6 +88,7 @@ func TestRun(t *testing.T) {
 		Convey("Given that initialising Kafka consumer returns an error", func() {
 			initMock := &serviceMock.InitialiserMock{
 				DoGetHTTPServerFunc:     funcDoGetHTTPServerNil,
+				DoGetHealthClientFunc:   funcDoGetHealthClient,
 				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersErr,
 			}
 			svcErrors := make(chan error, 1)
@@ -96,6 +106,7 @@ func TestRun(t *testing.T) {
 			initMock := &serviceMock.InitialiserMock{
 				DoGetHTTPServerFunc:     funcDoGetHTTPServerNil,
 				DoGetHealthCheckFunc:    funcDoGetHealthcheckErr,
+				DoGetHealthClientFunc:   funcDoGetHealthClient,
 				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
@@ -114,6 +125,7 @@ func TestRun(t *testing.T) {
 			initMock := &serviceMock.InitialiserMock{
 				DoGetHTTPServerFunc:     funcDoGetHTTPServer,
 				DoGetHealthCheckFunc:    funcDoGetHealthcheckOk,
+				DoGetHealthClientFunc:   funcDoGetHealthClient,
 				DoGetKafkaConsumersFunc: funcDoGetKafkaConsumersOk,
 			}
 			svcErrors := make(chan error, 1)
@@ -128,10 +140,11 @@ func TestRun(t *testing.T) {
 			})
 
 			Convey("The checkers are registered and the healthcheck and http server started", func() {
-				So(len(hcMock.AddCheckCalls()), ShouldEqual, 3)
-				So(hcMock.AddCheckCalls()[0].Name, ShouldResemble, "Reindex requested consumer")
-				So(hcMock.AddCheckCalls()[1].Name, ShouldResemble, "Reindex task counts consumer")
-				So(hcMock.AddCheckCalls()[2].Name, ShouldResemble, "Search data imported consumer")
+				So(len(hcMock.AddCheckCalls()), ShouldEqual, 4)
+				So(hcMock.AddCheckCalls()[0].Name, ShouldResemble, "API router")
+				So(hcMock.AddCheckCalls()[1].Name, ShouldResemble, "Reindex requested consumer")
+				So(hcMock.AddCheckCalls()[2].Name, ShouldResemble, "Reindex task counts consumer")
+				So(hcMock.AddCheckCalls()[3].Name, ShouldResemble, "Search data imported consumer")
 				So(len(initMock.DoGetHTTPServerCalls()), ShouldEqual, 1)
 				So(initMock.DoGetHTTPServerCalls()[0].BindAddr, ShouldEqual, "localhost:28500")
 				So(len(hcMock.StartCalls()), ShouldEqual, 1)
@@ -149,7 +162,8 @@ func TestRun(t *testing.T) {
 			}
 
 			initMock := &serviceMock.InitialiserMock{
-				DoGetHTTPServerFunc: funcDoGetHTTPServerNil,
+				DoGetHTTPServerFunc:   funcDoGetHTTPServerNil,
+				DoGetHealthClientFunc: funcDoGetHealthClient,
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMockAddFail, nil
 				},
@@ -164,10 +178,11 @@ func TestRun(t *testing.T) {
 				So(err.Error(), ShouldResemble, fmt.Sprintf("unable to register checkers: %s", errAddheckFail.Error()))
 				So(svcList.HealthCheck, ShouldBeTrue)
 				So(svcList.KafkaConsumers, ShouldBeTrue)
-				So(len(hcMockAddFail.AddCheckCalls()), ShouldEqual, 3)
-				So(hcMockAddFail.AddCheckCalls()[0].Name, ShouldResemble, "Reindex requested consumer")
-				So(hcMockAddFail.AddCheckCalls()[1].Name, ShouldResemble, "Reindex task counts consumer")
-				So(hcMockAddFail.AddCheckCalls()[2].Name, ShouldResemble, "Search data imported consumer")
+				So(len(hcMockAddFail.AddCheckCalls()), ShouldEqual, 4)
+				So(hcMockAddFail.AddCheckCalls()[0].Name, ShouldResemble, "API router")
+				So(hcMockAddFail.AddCheckCalls()[1].Name, ShouldResemble, "Reindex requested consumer")
+				So(hcMockAddFail.AddCheckCalls()[2].Name, ShouldResemble, "Reindex task counts consumer")
+				So(hcMockAddFail.AddCheckCalls()[3].Name, ShouldResemble, "Search data imported consumer")
 			})
 		})
 	})
@@ -213,6 +228,7 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
+				DoGetHealthClientFunc: funcDoGetHealthClient,
 				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
 					return consumerMock, consumerMock, consumerMock, nil
 				},
@@ -244,6 +260,7 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
+				DoGetHealthClientFunc: funcDoGetHealthClient,
 				DoGetKafkaConsumersFunc: func(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
 					return consumerMock, consumerMock, consumerMock, nil
 				},

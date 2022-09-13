@@ -2,6 +2,7 @@ package event
 
 import (
 	kafka "github.com/ONSdigital/dp-kafka/v3"
+	searchReindexAPIClient "github.com/ONSdigital/dp-search-reindex-api/sdk/v1"
 	"github.com/ONSdigital/go-ns/avro"
 )
 
@@ -12,7 +13,8 @@ type KafkaConsumerEvent[M KafkaAvroModel] struct {
 }
 
 type KafkaEventOptions struct {
-	ConsumerGroup kafka.IConsumerGroup
+	ConsumerGroup          kafka.IConsumerGroup
+	SearchReindexAPIClient *searchReindexAPIClient.Client
 }
 
 // GetReindexRequested returns information needed to handle the reindex-requested kafka messages

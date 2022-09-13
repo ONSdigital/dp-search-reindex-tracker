@@ -28,6 +28,8 @@ func (f *ComponentTest) InitializeScenario(godogCtx *godog.ScenarioContext) {
 		os.Exit(1)
 	}
 
+	apiFeature := searchReindexTrackerComponent.InitAPIFeature()
+
 	godogCtx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		searchReindexTrackerComponent.Reset()
 		return ctx, nil
@@ -45,6 +47,7 @@ func (f *ComponentTest) InitializeScenario(godogCtx *godog.ScenarioContext) {
 	})
 
 	searchReindexTrackerComponent.RegisterSteps(godogCtx)
+	apiFeature.RegisterSteps(godogCtx)
 }
 
 func (f *ComponentTest) InitializeTestSuite(ctx *godog.TestSuiteContext) {
