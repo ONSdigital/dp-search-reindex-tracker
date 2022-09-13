@@ -59,7 +59,7 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 	c.fakeAPIRouter = NewFakeAPI()
 	c.cfg.APIRouterURL = c.fakeAPIRouter.fakeHTTP.ResolveURL("")
 	c.fakeAPIRouter.healthRequest = c.fakeAPIRouter.fakeHTTP.NewHandler().Get("/health")
-	c.fakeAPIRouter.healthRequest.CustomHandle = healthCheckStatusHandle(200)
+	c.fakeAPIRouter.healthRequest.CustomHandle = statusHandle(200)
 
 	reindexRequestedConsumer := kafkatest.NewMessageConsumer(false)
 	reindexRequestedConsumer.CheckerFunc = funcCheck

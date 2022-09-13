@@ -63,7 +63,11 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 		ConsumerGroup:          reindexRequestedConsumer,
 		SearchReindexAPIClient: searchReindexAPIClient,
 	}
-	reindexRequestedEvent := event.GetReindexRequested(reindexRequestedEventOptions)
+	reindexRequestedEvent, err := event.GetReindexRequested(reindexRequestedEventOptions)
+	if err != nil {
+		log.Fatal(ctx, "failed to get reindex requested event", err)
+		return nil, err
+	}
 	event.Consume(ctx, cfg, reindexRequestedEvent)
 
 	if consumerStartErr := reindexRequestedConsumer.Start(); consumerStartErr != nil {
@@ -76,7 +80,11 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	reindexTaskCountsEventOptions := &event.KafkaEventOptions{
 		ConsumerGroup: reindexTaskCountsConsumer,
 	}
-	reindexTaskCountsEvent := event.GetReindexTaskCounts(reindexTaskCountsEventOptions)
+	reindexTaskCountsEvent, err := event.GetReindexTaskCounts(reindexTaskCountsEventOptions)
+	if err != nil {
+		log.Fatal(ctx, "failed to get reindex task counts event", err)
+		return nil, err
+	}
 	event.Consume(ctx, cfg, reindexTaskCountsEvent)
 
 	if consumerStartErr := reindexTaskCountsConsumer.Start(); consumerStartErr != nil {
@@ -89,7 +97,11 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	searchDataImportedEventOptions := &event.KafkaEventOptions{
 		ConsumerGroup: searchDataImportedConsumer,
 	}
-	searchDataImportedEvent := event.GetSearchDataImport(searchDataImportedEventOptions)
+	searchDataImportedEvent, err := event.GetSearchDataImport(searchDataImportedEventOptions)
+	if err != nil {
+		log.Fatal(ctx, "failed to get search data imported event", err)
+		return nil, err
+	}
 	event.Consume(ctx, cfg, searchDataImportedEvent)
 
 	if consumerStartErr := searchDataImportedConsumer.Start(); consumerStartErr != nil {

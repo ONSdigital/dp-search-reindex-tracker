@@ -6,7 +6,7 @@ import (
 	"github.com/maxcnunes/httpfake"
 )
 
-func healthCheckStatusHandle(status int) httpfake.Responder {
+func statusHandle(status int) httpfake.Responder {
 	return func(w http.ResponseWriter, r *http.Request, rh *httpfake.Request) {
 		w.WriteHeader(status)
 	}
