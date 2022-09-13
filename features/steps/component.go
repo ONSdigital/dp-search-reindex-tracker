@@ -132,7 +132,7 @@ func (c *SearchReindexTrackerComponent) DoGetHealthCheck(cfg *config.Config, bui
 	return &hc, nil
 }
 
-func (c *SearchReindexTrackerComponent) DoGetHealthClient(name string, url string) *health.Client {
+func (c *SearchReindexTrackerComponent) DoGetHealthClient(name, url string) *health.Client {
 	if name == "" || url == "" {
 		return nil
 	}
