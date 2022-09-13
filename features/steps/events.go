@@ -22,8 +22,6 @@ func theseEventsAreConsumed[M event.KafkaAvroModel](c *SearchReindexTrackerCompo
 		return fmt.Errorf("failed to convert to events - err: %v", err)
 	}
 
-	//signals := registerInterrupt()
-
 	// consume extracted observations
 	for _, e := range observationEvents {
 		bytes, err := schema.Marshal(e)
@@ -35,9 +33,6 @@ func theseEventsAreConsumed[M event.KafkaAvroModel](c *SearchReindexTrackerCompo
 	}
 
 	time.Sleep(300 * time.Millisecond)
-
-	// kill application
-	//signals <- os.Interrupt
 
 	return nil
 }
