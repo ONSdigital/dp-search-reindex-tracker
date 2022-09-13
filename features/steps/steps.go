@@ -17,6 +17,10 @@ func (c *SearchReindexTrackerComponent) RegisterSteps(ctx *godog.ScenarioContext
 	ctx.Step(`^nothing happens`, c.nothingHappens)
 	ctx.Step(`^one of the downstream services is failing`, c.oneOfTheDownstreamServicesIsFailing)
 	ctx.Step(`^one of the downstream services is warning`, c.oneOfTheDownstreamServicesIsWarning)
+	ctx.Step(`^patch request to search-reindex-api is successful for job id "([^"]*)"$`, c.patchRequestToSearchReindexApiIsSuccessfulForJobID)
+	ctx.Step(`^patch request to search-reindex-api is unsuccessful for job id "([^"]*)"$`, c.patchRequestToSearchReindexApiIsUnsuccessfulForJobID)
+	ctx.Step(`^the state of the reindex job should be updated to in-progress`, c.theStateOfTheReindexJobShouldBeUpdatedToInProgress)
+	ctx.Step(`^the state of the reindex job should not be updated to in-progress`, c.theStateOfTheReindexJobShouldNotBeUpdatedToInProgress)
 	ctx.Step(`^these reindex-requested events are consumed:$`, c.theseReindexRequestedEventsAreConsumed)
 	ctx.Step(`^these reindex-task-counts events are consumed:$`, c.theseReindexTaskCountsEventsAreConsumed)
 	ctx.Step(`^these search-data-import events are consumed:$`, c.theseSearchDataImportEventsAreConsumed)
@@ -26,7 +30,7 @@ func (c *SearchReindexTrackerComponent) allOfTheDownstreamServicesAreHealthy() e
 	c.fakeAPIRouter.healthRequest.Lock()
 	defer c.fakeAPIRouter.healthRequest.Unlock()
 
-	c.fakeAPIRouter.healthRequest.CustomHandle = healthCheckStatusHandle(200)
+	c.fakeAPIRouter.healthRequest.CustomHandle = statusHandle(200)
 
 	return nil
 }
@@ -68,7 +72,7 @@ func (c *SearchReindexTrackerComponent) oneOfTheDownstreamServicesIsWarning() er
 	c.fakeAPIRouter.healthRequest.Lock()
 	defer c.fakeAPIRouter.healthRequest.Unlock()
 
-	c.fakeAPIRouter.healthRequest.CustomHandle = healthCheckStatusHandle(429)
+	c.fakeAPIRouter.healthRequest.CustomHandle = statusHandle(429)
 
 	return nil
 }
@@ -77,9 +81,33 @@ func (c *SearchReindexTrackerComponent) oneOfTheDownstreamServicesIsFailing() er
 	c.fakeAPIRouter.healthRequest.Lock()
 	defer c.fakeAPIRouter.healthRequest.Unlock()
 
-	c.fakeAPIRouter.healthRequest.CustomHandle = healthCheckStatusHandle(500)
+	c.fakeAPIRouter.healthRequest.CustomHandle = statusHandle(500)
 
 	return nil
+}
+
+func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexApiIsSuccessfulForJobID(id string) error {
+	patchURL := fmt.Sprintf("/v1/search-reindex-jobs/%s", id)
+	patchRequest := c.fakeAPIRouter.fakeHTTP.NewHandler().Patch(patchURL)
+	patchRequest.CustomHandle = statusHandle(200)
+
+	return nil
+}
+
+func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexApiIsUnsuccessfulForJobID(id string) error {
+	patchURL := fmt.Sprintf("/v1/search-reindex-jobs/%s", id)
+	patchRequest := c.fakeAPIRouter.fakeHTTP.NewHandler().Patch(patchURL)
+	patchRequest.CustomHandle = statusHandle(500)
+
+	return nil
+}
+
+func (c *SearchReindexTrackerComponent) theStateOfTheReindexJobShouldBeUpdatedToInProgress() error {
+	return c.nothingHappens()
+}
+
+func (c *SearchReindexTrackerComponent) theStateOfTheReindexJobShouldNotBeUpdatedToInProgress() error {
+	return c.nothingHappens()
 }
 
 func (c *SearchReindexTrackerComponent) theseReindexRequestedEventsAreConsumed(table *godog.Table) error {
