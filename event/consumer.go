@@ -2,10 +2,16 @@ package event
 
 import (
 	"context"
+	"time"
 
 	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/log.go/v2/log"
+)
+
+const (
+	// ensure KAFKA_CONSUME_WAIT_TIME is significantly less than the graceful shutdown timeout
+	KAFKA_CONSUME_WAIT_TIME = 1 * time.Second
 )
 
 // Consume converts messages to event instances, and pass the event to the provided handler.
@@ -25,6 +31,8 @@ func Consume[M KafkaAvroModel](ctx context.Context, cfg *config.Config, topicEve
 			case <-topicEvent.ConsumerGroup.Channels().Closer:
 				log.Info(ctx, "closing event consumer loop because closer channel is closed", log.Data{"worker_id": workerID})
 				return
+			default:
+				time.Sleep(KAFKA_CONSUME_WAIT_TIME)
 			}
 		}
 	}

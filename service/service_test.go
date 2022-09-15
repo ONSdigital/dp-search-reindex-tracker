@@ -155,7 +155,7 @@ func TestRun(t *testing.T) {
 
 		Convey("Given that Checkers cannot be registered", func() {
 
-			errAddheckFail := errors.New("Error(s) registering checkers for healthcheck")
+			errAddheckFail := errors.New("error(s) registering checkers for healthcheck")
 			hcMockAddFail := &serviceMock.HealthCheckerMock{
 				AddCheckFunc: func(name string, checker healthcheck.Checker) error { return errAddheckFail },
 				StartFunc:    func(ctx context.Context) {},
