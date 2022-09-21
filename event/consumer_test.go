@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
-	"github.com/ONSdigital/go-ns/avro"
-
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event/mock"
+	"github.com/ONSdigital/go-ns/avro"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -69,6 +68,25 @@ func TestProcessMessage(t *testing.T) {
 		}
 
 		kafkaMsg := kafkatest.NewMessage([]byte("invalid"), 0)
+
+		Convey("When ProcessMessage is called", func() {
+			err := event.ProcessMessage(testCtx, cfg, topicEvent, kafkaMsg)
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given the topicEvent is nil", t, func() {
+		topicEvent := &event.KafkaConsumerEvent[event.ReindexRequestedModel]{
+			Handler: handlerFail,
+			Schema:  event.ReindexRequestedSchema,
+		}
+		topicEvent = nil
+
+		validMsg := marshal(event.ReindexRequestedSchema, testReindexRequestedEvent)
+		kafkaMsg := kafkatest.NewMessage(validMsg, 0)
 
 		Convey("When ProcessMessage is called", func() {
 			err := event.ProcessMessage(testCtx, cfg, topicEvent, kafkaMsg)

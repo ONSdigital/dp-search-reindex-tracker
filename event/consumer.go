@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"errors"
 
 	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
@@ -11,6 +12,11 @@ import (
 // ProcessMessage unmarshals the provided kafka message into an event and calls the handler.
 // Handling the commit of the message is done by the dp-kafka library which will commit the message on success or failure.
 func ProcessMessage[M KafkaAvroModel](ctx context.Context, cfg *config.Config, topicEvent *KafkaConsumerEvent[M], message kafka.Message) error {
+	if topicEvent == nil {
+		err := errors.New("provided topicEvent is nil")
+		log.Error(ctx, "failed to validate topicEvent", err)
+		return err
+	}
 
 	// unmarshal message
 	event, err := unmarshal[M](topicEvent.Schema, message)
