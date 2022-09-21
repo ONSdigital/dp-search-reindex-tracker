@@ -63,22 +63,25 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 
 	reindexRequestedConsumer := kafkatest.NewMessageConsumer(false)
 	reindexRequestedConsumer.CheckerFunc = funcCheck
-	reindexRequestedConsumer.StartFunc = func() error { return nil }
 	reindexRequestedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	reindexRequestedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+	reindexRequestedConsumer.StartFunc = func() error { return nil }
 	reindexRequestedConsumer.StopFunc = func() error { return nil }
 	c.reindexRequestedConsumer = reindexRequestedConsumer
 
 	reindexTaskCountsConsumer := kafkatest.NewMessageConsumer(false)
 	reindexTaskCountsConsumer.CheckerFunc = funcCheck
-	reindexTaskCountsConsumer.StartFunc = func() error { return nil }
 	reindexTaskCountsConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	reindexTaskCountsConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+	reindexTaskCountsConsumer.StartFunc = func() error { return nil }
 	reindexTaskCountsConsumer.StopFunc = func() error { return nil }
 	c.reindexTaskCountsConsumer = reindexTaskCountsConsumer
 
 	searchDataImportedConsumer := kafkatest.NewMessageConsumer(false)
 	searchDataImportedConsumer.CheckerFunc = funcCheck
-	searchDataImportedConsumer.StartFunc = func() error { return nil }
 	searchDataImportedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	searchDataImportedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+	searchDataImportedConsumer.StartFunc = func() error { return nil }
 	searchDataImportedConsumer.StopFunc = func() error { return nil }
 	c.searchDataImportedConsumer = searchDataImportedConsumer
 
