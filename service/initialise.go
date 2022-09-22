@@ -80,6 +80,7 @@ func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaCo
 		BrokerAddrs:  kafkaCfg.Brokers,
 		GroupName:    kafkaCfg.ReindexRequestedGroup,
 		KafkaVersion: &kafkaCfg.Version,
+		NumWorkers:   &kafkaCfg.NumWorkers,
 		Offset:       &kafkaOffset,
 		Topic:        kafkaCfg.ReindexRequestedTopic,
 	}
@@ -103,6 +104,7 @@ func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaCo
 		BrokerAddrs:  kafkaCfg.Brokers,
 		GroupName:    kafkaCfg.ReindexTaskCountsGroup,
 		KafkaVersion: &kafkaCfg.Version,
+		NumWorkers:   &kafkaCfg.NumWorkers,
 		Offset:       &kafkaOffset,
 		Topic:        kafkaCfg.ReindexTaskCountsTopic,
 	}
@@ -126,6 +128,7 @@ func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaCo
 		BrokerAddrs:  kafkaCfg.Brokers,
 		GroupName:    kafkaCfg.SearchDataImportedGroup,
 		KafkaVersion: &kafkaCfg.Version,
+		NumWorkers:   &kafkaCfg.NumWorkers,
 		Offset:       &kafkaOffset,
 		Topic:        kafkaCfg.SearchDataImportedTopic,
 	}

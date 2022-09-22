@@ -54,10 +54,11 @@ func TestRun(t *testing.T) {
 
 	Convey("Having a set of mocked dependencies", t, func() {
 		consumerMock := &kafkatest.IConsumerGroupMock{
-			CheckerFunc:   func(ctx context.Context, state *healthcheck.CheckState) error { return nil },
-			ChannelsFunc:  func() *kafka.ConsumerGroupChannels { return &kafka.ConsumerGroupChannels{} },
-			LogErrorsFunc: func(ctx context.Context) {},
-			StartFunc:     func() error { return nil },
+			CheckerFunc:         func(ctx context.Context, state *healthcheck.CheckState) error { return nil },
+			ChannelsFunc:        func() *kafka.ConsumerGroupChannels { return &kafka.ConsumerGroupChannels{} },
+			LogErrorsFunc:       func(ctx context.Context) {},
+			RegisterHandlerFunc: func(ctx context.Context, h kafka.Handler) error { return nil },
+			StartFunc:           func() error { return nil },
 		}
 
 		hcMock := &serviceMock.HealthCheckerMock{
@@ -195,12 +196,13 @@ func TestClose(t *testing.T) {
 		hcStopped := false
 
 		consumerMock := &kafkatest.IConsumerGroupMock{
-			CloseFunc:     func(ctx context.Context) error { return nil },
-			CheckerFunc:   func(ctx context.Context, state *healthcheck.CheckState) error { return nil },
-			ChannelsFunc:  func() *kafka.ConsumerGroupChannels { return &kafka.ConsumerGroupChannels{} },
-			LogErrorsFunc: func(ctx context.Context) {},
-			StartFunc:     func() error { return nil },
-			StopFunc:      func() error { return nil },
+			CloseFunc:           func(ctx context.Context) error { return nil },
+			CheckerFunc:         func(ctx context.Context, state *healthcheck.CheckState) error { return nil },
+			ChannelsFunc:        func() *kafka.ConsumerGroupChannels { return &kafka.ConsumerGroupChannels{} },
+			LogErrorsFunc:       func(ctx context.Context) {},
+			RegisterHandlerFunc: func(ctx context.Context, h kafka.Handler) error { return nil },
+			StartFunc:           func() error { return nil },
+			StopFunc:            func() error { return nil },
 		}
 
 		// healthcheck Stop does not depend on any other service being closed/stopped

@@ -27,7 +27,10 @@ func main() {
 	}
 
 	pConfig := &kafka.ProducerConfig{
-		KafkaVersion: &cfg.KafkaConfig.Version,
+		KafkaVersion:      &cfg.KafkaConfig.Version,
+		BrokerAddrs:       cfg.KafkaConfig.Brokers,
+		Topic:             cfg.KafkaConfig.ReindexRequestedTopic,
+		MinBrokersHealthy: &cfg.KafkaConfig.NumWorkers,
 	}
 	if cfg.KafkaConfig.SecProtocol == config.KafkaTLSProtocolFlag {
 		pConfig.SecurityConfig = kafka.GetSecurityConfig(
