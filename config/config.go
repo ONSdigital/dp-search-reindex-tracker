@@ -10,11 +10,12 @@ const KafkaTLSProtocolFlag = "TLS"
 
 // Config represents service configuration for dp-search-reindex-tracker
 type Config struct {
+	APIRouterURL               string        `envconfig:"API_ROUTER_URL"`
 	BindAddr                   string        `envconfig:"BIND_ADDR"`
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
-	OutputFilePath             string        `envconfig:"OUTPUT_FILE_PATH"`
+	ServiceAuthToken           string        `envconfig:"SERVICE_AUTH_TOKEN"   json:"-"`
 	KafkaConfig                KafkaConfig
 }
 
@@ -47,11 +48,12 @@ func Get() (*Config, error) {
 	}
 
 	cfg = &Config{
+		APIRouterURL:               "http://localhost:23200/v1",
 		BindAddr:                   "localhost:28500",
 		GracefulShutdownTimeout:    5 * time.Second,
 		HealthCheckInterval:        30 * time.Second,
 		HealthCheckCriticalTimeout: 90 * time.Second,
-		OutputFilePath:             "/tmp/helloworld.txt",
+		ServiceAuthToken:           "",
 		KafkaConfig: KafkaConfig{
 			Brokers:                 []string{"localhost:9092"},
 			NumWorkers:              1,

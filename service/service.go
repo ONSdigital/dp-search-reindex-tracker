@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	kafka "github.com/ONSdigital/dp-kafka/v3"
+	searchReindexAPIClient "github.com/ONSdigital/dp-search-reindex-api/sdk/v1"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -39,45 +41,83 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	r := mux.NewRouter()
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
-	// Get Kafka consumer
+	// Get health client for api router
+	routerHealthClient := serviceList.GetHealthClient("api-router", cfg.APIRouterURL)
+
+	// Get search reindex API client
+	searchReindexAPIClient, err := searchReindexAPIClient.NewWithHealthClient(cfg.ServiceAuthToken, routerHealthClient)
+	if err != nil {
+		log.Fatal(ctx, "failed to get search reindex api client", err)
+		return nil, err
+	}
+
+	// Get Kafka consumers
 	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := serviceList.GetKafkaConsumers(ctx, cfg)
 	if err != nil {
 		log.Fatal(ctx, "failed to initialise kafka consumers", err)
 		return nil, err
 	}
 
-	// Event Handler for 'Reindex Requested' Kafka Consumer
-	event.Consume(ctx, reindexRequestedConsumer, &event.HelloCalledHandler{}, cfg)
+	// Get 'Reindex Requested' kafka information for handling
+	reindexRequestedEventOptions := &event.KafkaEventOptions{
+		ConsumerGroup:          reindexRequestedConsumer,
+		SearchReindexAPIClient: searchReindexAPIClient,
+	}
+	reindexRequestedEvent, err := event.GetReindexRequested(reindexRequestedEventOptions)
+	if err != nil {
+		log.Fatal(ctx, "failed to get reindex requested event", err)
+		return nil, err
+	}
 
+	// Get 'Reindex Task Counts' kafka information for handling
+	reindexTaskCountsEventOptions := &event.KafkaEventOptions{
+		ConsumerGroup: reindexTaskCountsConsumer,
+	}
+	reindexTaskCountsEvent, err := event.GetReindexTaskCounts(reindexTaskCountsEventOptions)
+	if err != nil {
+		log.Fatal(ctx, "failed to get reindex task counts event", err)
+		return nil, err
+	}
+
+	// Get 'Search Data Imported' kafka information for handling
+	searchDataImportedEventOptions := &event.KafkaEventOptions{
+		ConsumerGroup: searchDataImportedConsumer,
+	}
+	searchDataImportedEvent, err := event.GetSearchDataImport(searchDataImportedEventOptions)
+	if err != nil {
+		log.Fatal(ctx, "failed to get search data imported event", err)
+		return nil, err
+	}
+
+	// Kafka consumer logging go routine
+	reindexRequestedConsumer.LogErrors(ctx)
+	reindexTaskCountsConsumer.LogErrors(ctx)
+	searchDataImportedConsumer.LogErrors(ctx)
+
+	// Kafka consuming go routine
+	reindexRequestedConsumer.RegisterHandler(ctx, func(ctx context.Context, workerID int, msg kafka.Message) error {
+		return event.ProcessMessage(ctx, cfg, reindexRequestedEvent, msg)
+	})
+	reindexTaskCountsConsumer.RegisterHandler(ctx, func(ctx context.Context, workerID int, msg kafka.Message) error {
+		return event.ProcessMessage(ctx, cfg, reindexTaskCountsEvent, msg)
+	})
+	searchDataImportedConsumer.RegisterHandler(ctx, func(ctx context.Context, workerID int, msg kafka.Message) error {
+		return event.ProcessMessage(ctx, cfg, searchDataImportedEvent, msg)
+	})
+
+	// Start kafka consumers
 	if consumerStartErr := reindexRequestedConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the reindex requested consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
-
-	// Kafka error logging go-routine
-	reindexRequestedConsumer.LogErrors(ctx)
-
-	// Event Handler for 'Reindex Task Counts' Kafka Consumer
-	event.Consume(ctx, reindexTaskCountsConsumer, &event.HelloCalledHandler{}, cfg)
-
 	if consumerStartErr := reindexTaskCountsConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the reindex task counts consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
-
-	// Kafka error logging go-routine
-	reindexTaskCountsConsumer.LogErrors(ctx)
-
-	// Event Handler for 'Search Data Imported' Kafka Consumer
-	event.Consume(ctx, searchDataImportedConsumer, &event.HelloCalledHandler{}, cfg)
-
 	if consumerStartErr := searchDataImportedConsumer.Start(); consumerStartErr != nil {
 		log.Fatal(ctx, "error starting the search data imported consumer", consumerStartErr)
 		return nil, consumerStartErr
 	}
-
-	// Kafka error logging go-routine
-	searchDataImportedConsumer.LogErrors(ctx)
 
 	// Get HealthCheck
 	hc, err := serviceList.GetHealthCheck(cfg, buildTime, gitCommit, version)
@@ -86,7 +126,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 		return nil, err
 	}
 
-	if err := registerCheckers(ctx, hc, reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer); err != nil {
+	if err := registerCheckers(ctx, hc, routerHealthClient, reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer); err != nil {
 		return nil, errors.Wrap(err, "unable to register checkers")
 	}
 
@@ -140,12 +180,14 @@ func (svc *Service) Close(ctx context.Context) error {
 				hasShutdownError = true
 			}
 			log.Info(ctx, "stopped reindex requested consumer listener")
+
 			log.Info(ctx, "stopping reindex task counts consumer listener")
 			if err := svc.reindexTaskCountsConsumer.Stop(); err != nil {
 				log.Error(ctx, "error stopping reindex task counts consumer listener", err)
 				hasShutdownError = true
 			}
 			log.Info(ctx, "stopped reindex task counts consumer listener")
+
 			log.Info(ctx, "stopping search data imported consumer listener")
 			if err := svc.searchDataImportedConsumer.Stop(); err != nil {
 				log.Error(ctx, "error stopping search data imported consumer listener", err)
@@ -168,12 +210,14 @@ func (svc *Service) Close(ctx context.Context) error {
 				hasShutdownError = true
 			}
 			log.Info(ctx, "closed reindex requested consumer")
+
 			log.Info(ctx, "closing reindex task counts consumer")
 			if err := svc.reindexTaskCountsConsumer.Close(ctx); err != nil {
 				log.Error(ctx, "error closing reindex task counts consumer", err)
 				hasShutdownError = true
 			}
 			log.Info(ctx, "closed reindex task counts consumer")
+
 			log.Info(ctx, "closing search data imported consumer")
 			if err := svc.searchDataImportedConsumer.Close(ctx); err != nil {
 				log.Error(ctx, "error closing search data imported consumer", err)
@@ -201,10 +245,15 @@ func (svc *Service) Close(ctx context.Context) error {
 }
 
 func registerCheckers(ctx context.Context,
-	hc HealthChecker,
+	hc HealthChecker, routerHealthClient *health.Client,
 	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer kafka.IConsumerGroup) (err error) {
 
 	hasErrors := false
+
+	if err = hc.AddCheck("API router", routerHealthClient.Checker); err != nil {
+		hasErrors = true
+		log.Error(ctx, "failed to add API router health checker", err)
+	}
 
 	if err := hc.AddCheck("Reindex requested consumer", reindexRequestedConsumer.Checker); err != nil {
 		hasErrors = true
