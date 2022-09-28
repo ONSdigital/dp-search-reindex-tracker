@@ -55,7 +55,7 @@ func (h *ReindexRequestedHandler) Handle(ctx context.Context, cfg *config.Config
 type ReindexTaskCountsHandler struct {
 }
 
-// Handle takes a single event
+// TO-DO: ReindexTaskCountsHandler.Handle takes a single reindex-task-counts event and handles it
 func (h *ReindexTaskCountsHandler) Handle(ctx context.Context, cfg *config.Config, event *ReindexTaskCountsModel) error {
 	return nil
 }
@@ -64,7 +64,7 @@ func (h *ReindexTaskCountsHandler) Handle(ctx context.Context, cfg *config.Confi
 type SearchDataImportHandler struct {
 }
 
-// Handle takes a single event
+// TO-DO: SearchDataImportHandler.Handle takes a single search-data-import event and handles it
 func (h *SearchDataImportHandler) Handle(ctx context.Context, cfg *config.Config, event *SearchDataImportModel) error {
 	return nil
 }
