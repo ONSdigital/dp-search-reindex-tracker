@@ -17,6 +17,10 @@ var (
 		SearchIndex: "testing",
 		TraceID:     "5678",
 	}
+	testReindexTaskCountEventOK = &ReindexTaskCountsModel{
+		JobID:   "1234",
+		TraceID: "5678",
+	}
 	errUnexpected = errors.New("unexpected error")
 )
 
@@ -83,14 +87,52 @@ func TestReindexRequestedHandler_Handle(t *testing.T) {
 	})
 }
 
-// TODO - complete unit test once ReindexTaskCountsHandler.Handle has been implemented
 func TestReindexTaskCountsHandler_Handle(t *testing.T) {
-	Convey("Given a successful event handler, when Handle is triggered", t, func() {
-		t.SkipNow()
+	ctx := context.Background()
+
+	cfg, err := config.Get()
+	if err != nil {
+		t.Errorf("failed to get config - err: %v", err)
+	}
+
+	Convey("Given post request to search reindex api is not successful", t, func() {
+		searchReindexAPIMock := &searchReindexAPIMock.ClientMock{
+			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
+				return nil, nil
+			},
+			PutTaskNumberOfDocsFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskName string, docCount string) (*sdk.RespHeaders, error) {
+				return nil, errUnexpected
+			},
+		}
+
+		reindexTaskCountHandler := &ReindexTaskCountsHandler{
+			SearchReindexAPIClient: searchReindexAPIMock,
+		}
+
+		Convey("When ReindexTaskCountHandler.Handle is called", func() {
+			err := reindexTaskCountHandler.Handle(ctx, cfg, testReindexTaskCountEventOK)
+			So(err, ShouldNotBeNil)
+		})
 	})
 
-	Convey("handler returns an error", t, func() {
-		t.SkipNow()
+	Convey("Given request to search reindex api is successful", t, func() {
+		searchReindexAPIMock := &searchReindexAPIMock.ClientMock{
+			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
+				return nil, nil
+			},
+			PutTaskNumberOfDocsFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskName string, docCount string) (*sdk.RespHeaders, error) {
+				return nil, nil
+			},
+		}
+
+		reindexTaskCountHandler := &ReindexTaskCountsHandler{
+			SearchReindexAPIClient: searchReindexAPIMock,
+		}
+
+		Convey("When ReindexTaskCountHandler.Handle is called", func() {
+			err := reindexTaskCountHandler.Handle(ctx, cfg, testReindexTaskCountEventOK)
+			So(err, ShouldBeNil)
+		})
 	})
 }
 
