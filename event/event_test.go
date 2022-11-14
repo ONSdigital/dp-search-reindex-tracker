@@ -124,7 +124,8 @@ func TestGetReindexRequested(t *testing.T) {
 func TestGetReindexTaskCounts(t *testing.T) {
 	Convey("Given valid options for reindex task counts event", t, func() {
 		options := &KafkaEventOptions{
-			ConsumerGroup: &kafkatest.IConsumerGroupMock{},
+			ConsumerGroup:          &kafkatest.IConsumerGroupMock{},
+			SearchReindexAPIClient: &searchReindexAPIMock.ClientMock{},
 		}
 
 		Convey("When GetReindexTaskCounts is called", func() {
@@ -134,7 +135,9 @@ func TestGetReindexTaskCounts(t *testing.T) {
 				So(event, ShouldNotBeNil)
 				So(event, ShouldNotBeEmpty)
 
-				So(event.Handler, ShouldResemble, &ReindexTaskCountsHandler{})
+				So(event.Handler, ShouldResemble, &ReindexTaskCountsHandler{
+					SearchReindexAPIClient: options.SearchReindexAPIClient,
+				})
 				So(event.Schema, ShouldResemble, ReindexTaskCountsSchema)
 				So(event.ConsumerGroup, ShouldResemble, options.ConsumerGroup)
 

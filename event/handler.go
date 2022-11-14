@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	searchReindexAPIModel "github.com/ONSdigital/dp-search-reindex-api/models"
@@ -53,10 +54,34 @@ func (h *ReindexRequestedHandler) Handle(ctx context.Context, cfg *config.Config
 
 // ReindexTaskCountsHandler is the handler for reindex task counts messages.
 type ReindexTaskCountsHandler struct {
+	SearchReindexAPIClient searchReindexAPIClient.Client
 }
 
-// TODO: ReindexTaskCountsHandler.Handle takes a single reindex-task-counts event and handles it
+// Handle updates the number of documents associated with a task and then does a patch to the job to update the same.
 func (h *ReindexTaskCountsHandler) Handle(ctx context.Context, cfg *config.Config, event *ReindexTaskCountsModel) error {
+	reqHeaders := searchReindexAPIClient.Headers{
+		ServiceAuthToken: cfg.ServiceAuthToken,
+	}
+
+	_, err := h.SearchReindexAPIClient.PutTaskNumberOfDocs(ctx, reqHeaders, event.JobID, event.TaskName, strconv.Itoa(int(event.TaskCount)))
+	if err != nil {
+		log.Error(ctx, "failed to update number of documents associated with a task request to search-reindex-api", err)
+		return err
+	}
+
+	reqPatchOp := []searchReindexAPIClient.PatchOperation{
+		{
+			Op:    patchReplace,
+			Path:  searchReindexAPIModel.JobTotalSearchDocumentsPath,
+			Value: event.TaskCount,
+		},
+	}
+	_, err = h.SearchReindexAPIClient.PatchJob(ctx, reqHeaders, event.JobID, reqPatchOp)
+	if err != nil {
+		log.Error(ctx, "failed to make patch request to search-reindex-api", err)
+		return err
+	}
+
 	return nil
 }
 

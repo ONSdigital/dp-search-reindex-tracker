@@ -63,8 +63,10 @@ func GetReindexTaskCounts(options *KafkaEventOptions) (*KafkaConsumerEvent[Reind
 	}
 
 	topic := KafkaConsumerEvent[ReindexTaskCountsModel]{
-		Handler: &ReindexTaskCountsHandler{},
-		Schema:  ReindexTaskCountsSchema,
+		Handler: &ReindexTaskCountsHandler{
+			SearchReindexAPIClient: options.SearchReindexAPIClient,
+		},
+		Schema: ReindexTaskCountsSchema,
 	}
 
 	topic.ConsumerGroup = options.ConsumerGroup

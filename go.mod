@@ -11,7 +11,7 @@ require (
 	github.com/ONSdigital/dp-kafka/v3 v3.4.0
 	github.com/ONSdigital/dp-net v1.5.0
 	github.com/ONSdigital/dp-net/v2 v2.5.0-beta.2
-	github.com/ONSdigital/dp-search-reindex-api v0.23.0
+	github.com/ONSdigital/dp-search-reindex-api v0.24.0
 	github.com/ONSdigital/go-ns v0.0.0-20210916104633-ac1c1c52327e
 	github.com/ONSdigital/log.go/v2 v2.3.0-beta
 	github.com/cucumber/godog v0.12.5
@@ -87,6 +87,6 @@ require (
 	golang.org/x/net v0.0.0-20220920203100-d0c6ba3f52d9 // indirect
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
