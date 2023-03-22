@@ -23,12 +23,12 @@ var ReindexRequestedSchema = &avro.Schema{
 var reindexTaskCounts = `{
 	"type": "record",
 	"name": "reindex-task-counts",
-	"fields": [
-		{"name": "job_id", "type": "string", "default": ""},
-		{"name": "task_name", "type": "string", "default": ""},
-		{"name": "task_count", "type": "int", "default": 0},
-		{"name": "trace_id", "type": "string", "default": ""}
-	]
+	"fields": "fields": [
+    {"name": "job_id", "type": "string", "default": ""},
+    {"name": "task", "type": "string", "default": ""},
+    {"name": "extraction_completed", "type": "boolean", "default": false},
+    {"name": "count", "type": "string", "default":"0"}
+  ]
 }`
 
 // ReindexTaskCountsSchema is the Avro schema for Reindex Task Counts messages.
