@@ -1,8 +1,12 @@
 # dp-search-reindex-tracker
-dp-search-reindex-tracker tracks a search reindex job
+
+dp-search-reindex-tracker tracks the progress of a search reindex job
+
+See [search service architecture docs here](https://github.com/ONSdigital/dp-search-api/tree/develop/architecture#search-service-architecture)
 
 ### Getting started
 
+* Run `make help` to see full list of make targets
 * Run `make debug`
 
 The Search Reindex Tracker service runs in the background consuming messages from Kafka. 
