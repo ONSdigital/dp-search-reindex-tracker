@@ -37,13 +37,14 @@ func (e *ExternalServiceList) GetHTTPServer(bindAddr string, router http.Handler
 }
 
 // GetKafkaConsumers creates three Kafka consumers and sets the consumer flag to true
-func (e *ExternalServiceList) GetKafkaConsumers(ctx context.Context, cfg *config.Config) (dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, error) {
-	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err := e.Init.DoGetKafkaConsumers(ctx, &cfg.KafkaConfig)
+func (e *ExternalServiceList) GetKafkaConsumers(ctx context.Context, cfg *config.Config) (reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer dpkafka.IConsumerGroup, err error) {
+	reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, err = e.Init.DoGetKafkaConsumers(ctx, &cfg.KafkaConfig)
 	if err != nil {
-		return nil, nil, nil, err
+		return
 	}
+
 	e.KafkaConsumers = true
-	return reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer, nil
+	return
 }
 
 // GetHealthCheck creates a healthcheck with versionInfo and sets teh HealthCheck flag to true
@@ -71,7 +72,7 @@ func (e *Init) DoGetHTTPServer(bindAddr string, router http.Handler) HTTPServer 
 // DoGetKafkaConsumers returns three Kafka Consumer groups:
 // - reindexRequestedConsumer
 // - reindexTaskCountsConsumer
-func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, dpkafka.IConsumerGroup, error) {
+func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (reindexRequestedConsumer, reindexTaskCountsConsumer, searchDataImportedConsumer dpkafka.IConsumerGroup, err error) {
 	kafkaOffset := dpkafka.OffsetNewest
 	if kafkaCfg.OffsetOldest {
 		kafkaOffset = dpkafka.OffsetOldest
@@ -92,7 +93,7 @@ func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaCo
 			kafkaCfg.SecSkipVerify,
 		)
 	}
-	reindexRequestedConsumer, err := dpkafka.NewConsumerGroup(
+	reindexRequestedConsumer, err = dpkafka.NewConsumerGroup(
 		ctx,
 		reindexRequestedCgConfig,
 	)
@@ -116,7 +117,7 @@ func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaCo
 			kafkaCfg.SecSkipVerify,
 		)
 	}
-	reindexTaskCountsConsumer, err := dpkafka.NewConsumerGroup(
+	reindexTaskCountsConsumer, err = dpkafka.NewConsumerGroup(
 		ctx,
 		reindexTaskCountsCgConfig,
 	)
@@ -140,7 +141,7 @@ func (e *Init) DoGetKafkaConsumers(ctx context.Context, kafkaCfg *config.KafkaCo
 			kafkaCfg.SecSkipVerify,
 		)
 	}
-	searchDataImportedConsumer, err := dpkafka.NewConsumerGroup(
+	searchDataImportedConsumer, err = dpkafka.NewConsumerGroup(
 		ctx,
 		searchDataImportedCgConfig,
 	)

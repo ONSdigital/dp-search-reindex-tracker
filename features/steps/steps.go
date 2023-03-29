@@ -3,7 +3,7 @@ package steps
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"time"
 
 	"github.com/ONSdigital/dp-search-reindex-tracker/event"
@@ -17,8 +17,8 @@ func (c *SearchReindexTrackerComponent) RegisterSteps(ctx *godog.ScenarioContext
 	ctx.Step(`^nothing happens`, c.nothingHappens)
 	ctx.Step(`^one of the downstream services is failing`, c.oneOfTheDownstreamServicesIsFailing)
 	ctx.Step(`^one of the downstream services is warning`, c.oneOfTheDownstreamServicesIsWarning)
-	ctx.Step(`^patch request to search-reindex-api is successful for job id "([^"]*)"$`, c.patchRequestToSearchReindexApiIsSuccessfulForJobID)
-	ctx.Step(`^patch request to search-reindex-api is unsuccessful for job id "([^"]*)"$`, c.patchRequestToSearchReindexApiIsUnsuccessfulForJobID)
+	ctx.Step(`^patch request to search-reindex-api is successful for job id "([^"]*)"$`, c.patchRequestToSearchReindexAPIIsSuccessfulForJobID)
+	ctx.Step(`^patch request to search-reindex-api is unsuccessful for job id "([^"]*)"$`, c.patchRequestToSearchReindexAPIIsUnsuccessfulForJobID)
 	ctx.Step(`^the state of the reindex job should be updated to in-progress`, c.theStateOfTheReindexJobShouldBeUpdatedToInProgress)
 	ctx.Step(`^the state of the reindex job should not be updated to in-progress`, c.theStateOfTheReindexJobShouldNotBeUpdatedToInProgress)
 	ctx.Step(`^these reindex-requested events are consumed:$`, c.theseReindexRequestedEventsAreConsumed)
@@ -44,7 +44,7 @@ func (c *SearchReindexTrackerComponent) delayTimeBySeconds(sec int) error {
 func (c *SearchReindexTrackerComponent) iShouldReceiveTheFollowingHealthJSONResponse(expectedResponse *godog.DocString) error {
 	var healthResponse, expectedHealth HealthCheckTest
 
-	responseBody, err := ioutil.ReadAll(c.apiFeature.HttpResponse.Body)
+	responseBody, err := io.ReadAll(c.apiFeature.HttpResponse.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response of search controller component - error: %v", err)
 	}
@@ -86,7 +86,7 @@ func (c *SearchReindexTrackerComponent) oneOfTheDownstreamServicesIsFailing() er
 	return nil
 }
 
-func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexApiIsSuccessfulForJobID(id string) error {
+func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexAPIIsSuccessfulForJobID(id string) error {
 	patchURL := fmt.Sprintf("/v1/search-reindex-jobs/%s", id)
 	patchRequest := c.fakeAPIRouter.fakeHTTP.NewHandler().Patch(patchURL)
 	patchRequest.CustomHandle = statusHandle(200)
@@ -94,7 +94,7 @@ func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexApiIsSuccessf
 	return nil
 }
 
-func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexApiIsUnsuccessfulForJobID(id string) error {
+func (c *SearchReindexTrackerComponent) patchRequestToSearchReindexAPIIsUnsuccessfulForJobID(id string) error {
 	patchURL := fmt.Sprintf("/v1/search-reindex-jobs/%s", id)
 	patchRequest := c.fakeAPIRouter.fakeHTTP.NewHandler().Patch(patchURL)
 	patchRequest.CustomHandle = statusHandle(500)

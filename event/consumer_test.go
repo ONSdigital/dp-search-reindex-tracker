@@ -79,11 +79,7 @@ func TestProcessMessage(t *testing.T) {
 	})
 
 	Convey("Given the topicEvent is nil", t, func() {
-		topicEvent := &event.KafkaConsumerEvent[event.ReindexRequestedModel]{
-			Handler: handlerFail,
-			Schema:  event.ReindexRequestedSchema,
-		}
-		topicEvent = nil
+		var topicEvent *event.KafkaConsumerEvent[event.ReindexRequestedModel]
 
 		validMsg := marshal(event.ReindexRequestedSchema, testReindexRequestedEvent)
 		kafkaMsg := kafkatest.NewMessage(validMsg, 0)
@@ -117,8 +113,8 @@ func TestProcessMessage(t *testing.T) {
 }
 
 // marshal helper method to marshal a event into a []byte
-func marshal[M event.KafkaAvroModel](topicSchema *avro.Schema, event M) []byte {
-	bytes, err := topicSchema.Marshal(event)
+func marshal[M event.KafkaAvroModel](topicSchema *avro.Schema, data M) []byte {
+	bytes, err := topicSchema.Marshal(data)
 	So(err, ShouldBeNil)
 	return bytes
 }
