@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/dp-search-reindex-api/sdk"
-	searchReindexAPIMock "github.com/ONSdigital/dp-search-reindex-api/sdk/mocks"
+	searchReindexAPIClientMock "github.com/ONSdigital/dp-search-reindex-api/sdk/mocks"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -33,14 +33,14 @@ func TestReindexRequestedHandler_Handle(t *testing.T) {
 	}
 
 	Convey("Given patch request to search reindex api is successful", t, func() {
-		searchReindexAPIMock := &searchReindexAPIMock.ClientMock{
+		searchReindexClientMock := &searchReindexAPIClientMock.ClientMock{
 			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
 				return nil, nil
 			},
 		}
 
 		reindexRequestedHandler := &ReindexRequestedHandler{
-			SearchReindexAPIClient: searchReindexAPIMock,
+			SearchReindexAPIClient: searchReindexClientMock,
 		}
 
 		Convey("When ReindexRequestedHandler.Handle is called", func() {
@@ -62,14 +62,14 @@ func TestReindexRequestedHandler_Handle(t *testing.T) {
 	})
 
 	Convey("Given patch request to search reindex api isn't successful", t, func() {
-		searchReindexAPIMock := &searchReindexAPIMock.ClientMock{
+		searchReindexClientMock := &searchReindexAPIClientMock.ClientMock{
 			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
 				return nil, errUnexpected
 			},
 		}
 
 		reindexRequestedHandler := &ReindexRequestedHandler{
-			SearchReindexAPIClient: searchReindexAPIMock,
+			SearchReindexAPIClient: searchReindexClientMock,
 		}
 
 		Convey("When ReindexRequestedHandler.Handle is called", func() {
@@ -96,7 +96,7 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 	}
 
 	Convey("Given post request to search reindex api is not successful", t, func() {
-		searchReindexAPIMock := &searchReindexAPIMock.ClientMock{
+		searchReindexClientMock := &searchReindexAPIClientMock.ClientMock{
 			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
 				return nil, nil
 			},
@@ -106,7 +106,7 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 		}
 
 		reindexTaskCountHandler := &ReindexTaskCountsHandler{
-			SearchReindexAPIClient: searchReindexAPIMock,
+			SearchReindexAPIClient: searchReindexClientMock,
 		}
 
 		Convey("When ReindexTaskCountHandler.Handle is called", func() {
@@ -116,7 +116,7 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 	})
 
 	Convey("Given request to search reindex api is successful", t, func() {
-		searchReindexAPIMock := &searchReindexAPIMock.ClientMock{
+		searchReindexClientMock := &searchReindexAPIClientMock.ClientMock{
 			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
 				return nil, nil
 			},
@@ -126,7 +126,7 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 		}
 
 		reindexTaskCountHandler := &ReindexTaskCountsHandler{
-			SearchReindexAPIClient: searchReindexAPIMock,
+			SearchReindexAPIClient: searchReindexClientMock,
 		}
 
 		Convey("When ReindexTaskCountHandler.Handle is called", func() {
