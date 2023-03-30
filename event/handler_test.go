@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ONSdigital/dp-search-reindex-api/models"
+
 	"github.com/ONSdigital/dp-search-reindex-api/sdk"
 	searchReindexAPIClientMock "github.com/ONSdigital/dp-search-reindex-api/sdk/mocks"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
@@ -18,8 +20,7 @@ var (
 		TraceID:     "5678",
 	}
 	testReindexTaskCountEventOK = &ReindexTaskCountsModel{
-		JobID:   "1234",
-		TraceID: "5678",
+		JobID: "1234",
 	}
 	errUnexpected = errors.New("unexpected error")
 )
@@ -100,8 +101,8 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
 				return nil, nil
 			},
-			PutTaskNumberOfDocsFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskName string, docCount string) (*sdk.RespHeaders, error) {
-				return nil, errUnexpected
+			PostTaskFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskToCreate models.TaskToCreate) (*sdk.RespHeaders, *models.Task, error) {
+				return nil, nil, errUnexpected
 			},
 		}
 
@@ -120,8 +121,11 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 			PatchJobFunc: func(ctx context.Context, headers sdk.Headers, jobID string, body []sdk.PatchOperation) (*sdk.RespHeaders, error) {
 				return nil, nil
 			},
-			PutTaskNumberOfDocsFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskName string, docCount string) (*sdk.RespHeaders, error) {
-				return nil, nil
+			PostTaskFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskToCreate models.TaskToCreate) (*sdk.RespHeaders, *models.Task, error) {
+				return nil, nil, nil
+			},
+			GetTasksFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string) (*sdk.RespHeaders, *models.Tasks, error) {
+				return nil, &models.Tasks{TotalCount: 10}, nil
 			},
 		}
 

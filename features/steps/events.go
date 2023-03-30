@@ -51,6 +51,15 @@ func convertToEvents[M event.KafkaAvroModel](table *godog.Table) ([]*M, error) {
 		return int32(valInt), nil
 	})
 
+	// register parser for handling boolean types as the default assist does not handle boolean types
+	assist.RegisterParser(false, func(raw string) (interface{}, error) {
+		valBool, err := strconv.ParseBool(raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to register boolean parser in assist - err: %v", err)
+		}
+		return valBool, nil
+	})
+
 	events, err := assist.CreateSlice(&emptyEventModel, table)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create events - err: %v", err)

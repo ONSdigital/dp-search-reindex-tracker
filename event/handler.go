@@ -2,7 +2,7 @@ package event
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 	"sync"
 
 	searchReindexAPIModel "github.com/ONSdigital/dp-search-reindex-api/models"
@@ -63,17 +63,37 @@ func (h *ReindexTaskCountsHandler) Handle(ctx context.Context, cfg *config.Confi
 		ServiceAuthToken: cfg.ServiceAuthToken,
 	}
 
-	_, err := h.SearchReindexAPIClient.PutTaskNumberOfDocs(ctx, reqHeaders, event.JobID, event.TaskName, strconv.Itoa(int(event.TaskCount)))
+	_, _, err := h.SearchReindexAPIClient.PostTask(ctx, reqHeaders, event.JobID, searchReindexAPIModel.TaskToCreate{
+		TaskName:          event.TaskName,
+		NumberOfDocuments: int(event.TaskCount),
+	})
 	if err != nil {
-		log.Error(ctx, "failed to update number of documents associated with a task request to search-reindex-api", err)
+		log.Error(ctx, fmt.Sprintf("failed to create task %v associated with the job with id : %v", event.TaskName, event.JobID), err)
 		return err
 	}
 
+	_, tasks, err := h.SearchReindexAPIClient.GetTasks(ctx, reqHeaders, event.JobID)
+	if err != nil {
+		log.Error(ctx, fmt.Sprintf("failed to retrieve number of tasks associated with the job with id : %v", event.JobID), err)
+		return err
+	}
+
+	totalNumberOfTasksCompleted := tasks.TotalCount + 1
 	reqPatchOp := []searchReindexAPIClient.PatchOperation{
 		{
 			Op:    patchReplace,
 			Path:  searchReindexAPIModel.JobTotalSearchDocumentsPath,
 			Value: event.TaskCount,
+		},
+		{
+			Op:    patchReplace,
+			Path:  searchReindexAPIModel.JobURLExtractionCompletedStatusPath,
+			Value: event.ExtractionCompleted,
+		},
+		{
+			Op:    patchReplace,
+			Path:  searchReindexAPIModel.JobNoOfTasksPath,
+			Value: totalNumberOfTasksCompleted,
 		},
 	}
 	_, err = h.SearchReindexAPIClient.PatchJob(ctx, reqHeaders, event.JobID, reqPatchOp)
