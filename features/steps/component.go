@@ -41,8 +41,10 @@ type SearchReindexTrackerComponent struct {
 
 func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) {
 	c := &SearchReindexTrackerComponent{
-		HTTPServer: &http.Server{},
-		errorChan:  make(chan error),
+		HTTPServer: &http.Server{
+			ReadHeaderTimeout: 5,
+		},
+		errorChan: make(chan error),
 	}
 
 	c.ctx = context.Background()
@@ -125,7 +127,7 @@ func (c *SearchReindexTrackerComponent) InitialiseService() (http.Handler, error
 	return c.HTTPServer.Handler, nil
 }
 
-func (c *SearchReindexTrackerComponent) DoGetHealthCheck(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
+func (c *SearchReindexTrackerComponent) DoGetHealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 	componentBuildTime := strconv.Itoa(int(time.Now().Unix()))
 	versionInfo, err := healthcheck.NewVersionInfo(componentBuildTime, gitCommitHash, appVersion)
 	if err != nil {
@@ -153,7 +155,7 @@ func (c *SearchReindexTrackerComponent) DoGetHTTPServer(bindAddr string, router 
 	return c.HTTPServer
 }
 
-func (c *SearchReindexTrackerComponent) DoGetConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafka.IConsumerGroup, kafka.IConsumerGroup, kafka.IConsumerGroup, error) {
+func (c *SearchReindexTrackerComponent) DoGetConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (reindexRequested, reindexTaskCounts, searchDataImported kafka.IConsumerGroup, err error) {
 	return c.reindexRequestedConsumer, c.reindexTaskCountsConsumer, c.searchDataImportedConsumer, nil
 }
 

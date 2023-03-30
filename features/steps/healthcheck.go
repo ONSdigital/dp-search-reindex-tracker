@@ -28,7 +28,7 @@ type Check struct {
 	LastFailure *time.Time `json:"last_failure"`
 }
 
-func (c *SearchReindexTrackerComponent) validateHealthCheckResponse(healthResponse HealthCheckTest, expectedResponse HealthCheckTest) {
+func (c *SearchReindexTrackerComponent) validateHealthCheckResponse(healthResponse, expectedResponse HealthCheckTest) {
 	maxExpectedStartTime := c.startTime.Add((c.cfg.HealthCheckInterval + 1) * time.Second)
 
 	assert.Equal(&c.ErrorFeature, expectedResponse.Status, healthResponse.Status)
@@ -43,7 +43,7 @@ func (c *SearchReindexTrackerComponent) validateHealthCheckResponse(healthRespon
 	}
 }
 
-func (c *SearchReindexTrackerComponent) validateHealthVersion(versionResponse healthcheck.VersionInfo, expectedVersion healthcheck.VersionInfo, maxExpectedStartTime time.Time) {
+func (c *SearchReindexTrackerComponent) validateHealthVersion(versionResponse, expectedVersion healthcheck.VersionInfo, maxExpectedStartTime time.Time) {
 	assert.True(&c.ErrorFeature, versionResponse.BuildTime.Before(maxExpectedStartTime))
 	assert.Equal(&c.ErrorFeature, expectedVersion.GitCommit, versionResponse.GitCommit)
 	assert.Equal(&c.ErrorFeature, expectedVersion.Language, versionResponse.Language)

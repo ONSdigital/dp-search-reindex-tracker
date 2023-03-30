@@ -43,10 +43,11 @@ func convertToEvents[M event.KafkaAvroModel](table *godog.Table) ([]*M, error) {
 
 	// register parser for handling int32 types as the default assist does not handle int32 types
 	assist.RegisterParser(int32(0), func(raw string) (interface{}, error) {
-		valInt, err := strconv.Atoi(raw)
+		valInt, err := strconv.ParseInt(raw, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("failed to register int32 parser in assist - err: %v", err)
 		}
+
 		return int32(valInt), nil
 	})
 
