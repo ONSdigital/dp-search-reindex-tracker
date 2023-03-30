@@ -13,10 +13,10 @@ type ReindexRequestedModel struct {
 
 // ReindexTaskCountsModel provides an avro structure for a Reindex Task Counts event
 type ReindexTaskCountsModel struct {
-	JobID     string `avro:"job_id"`
-	TaskName  string `avro:"task_name"`
-	TaskCount int32  `avro:"task_count"`
-	TraceID   string `avro:"trace_id"`
+	JobID               string `avro:"job_id"`
+	TaskName            string `avro:"task"`
+	ExtractionCompleted bool   `avro:"extraction_completed"`
+	TaskCount           int32  `avro:"count"`
 }
 
 // SearchDataImport provides event data for a search data import

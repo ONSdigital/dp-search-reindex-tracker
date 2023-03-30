@@ -23,11 +23,11 @@ var ReindexRequestedSchema = &avro.Schema{
 var reindexTaskCounts = `{
 	"type": "record",
 	"name": "reindex-task-counts",
-	"fields": "fields": [
+	"fields": [
     {"name": "job_id", "type": "string", "default": ""},
     {"name": "task", "type": "string", "default": ""},
     {"name": "extraction_completed", "type": "boolean", "default": false},
-    {"name": "count", "type": "string", "default":"0"}
+    {"name": "count", "type": "int"}
   ]
 }`
 
