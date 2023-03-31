@@ -90,6 +90,7 @@ func TestReindexRequestedHandler_Handle(t *testing.T) {
 
 func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 	ctx := context.Background()
+	testEtag := "c4893d50-cfbf-11ed-afa1-0242ac120002"
 
 	cfg, err := config.Get()
 	if err != nil {
@@ -102,7 +103,9 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 				return nil, nil
 			},
 			PostTaskFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string, taskToCreate models.TaskToCreate) (*sdk.RespHeaders, *models.Task, error) {
-				return nil, nil, errUnexpected
+				return &sdk.RespHeaders{
+					ETag: testEtag,
+				}, nil, errUnexpected
 			},
 		}
 
@@ -125,7 +128,9 @@ func TestReindexTaskCountsHandler_Handle(t *testing.T) {
 				return nil, nil, nil
 			},
 			GetTasksFunc: func(ctx context.Context, reqHeaders sdk.Headers, jobID string) (*sdk.RespHeaders, *models.Tasks, error) {
-				return nil, &models.Tasks{TotalCount: 10}, nil
+				return &sdk.RespHeaders{
+					ETag: testEtag,
+				}, &models.Tasks{TotalCount: 10}, nil
 			},
 		}
 
