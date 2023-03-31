@@ -72,7 +72,7 @@ func (h *ReindexTaskCountsHandler) Handle(ctx context.Context, cfg *config.Confi
 		return err
 	}
 
-	_, tasks, err := h.SearchReindexAPIClient.GetTasks(ctx, reqHeaders, event.JobID)
+	respHeaders, tasks, err := h.SearchReindexAPIClient.GetTasks(ctx, reqHeaders, event.JobID)
 	if err != nil {
 		log.Error(ctx, fmt.Sprintf("failed to retrieve number of tasks associated with the job with id : %v", event.JobID), err)
 		return err
@@ -96,6 +96,7 @@ func (h *ReindexTaskCountsHandler) Handle(ctx context.Context, cfg *config.Confi
 			Value: totalNumberOfTasksCompleted,
 		},
 	}
+	reqHeaders.IfMatch = respHeaders.ETag
 	_, err = h.SearchReindexAPIClient.PatchJob(ctx, reqHeaders, event.JobID, reqPatchOp)
 	if err != nil {
 		log.Error(ctx, "failed to make patch request to search-reindex-api", err)
