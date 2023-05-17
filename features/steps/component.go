@@ -12,15 +12,19 @@ import (
 	componentTest "github.com/ONSdigital/dp-component-test"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	kafka "github.com/ONSdigital/dp-kafka/v3"
-	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/dp-search-reindex-tracker/service"
 	"github.com/ONSdigital/dp-search-reindex-tracker/service/mock"
 )
 
 const (
-	gitCommitHash = "3t7e5s1t4272646ef477f8ed755"
-	appVersion    = "v1.2.3"
+	gitCommitHash         = "3t7e5s1t4272646ef477f8ed755"
+	appVersion            = "v1.2.3"
+	ComponentTestGroup    = "component-test" // kafka group name for the component test consumer
+	DrainTopicTimeout     = 5 * time.Second  // maximum time to wait for a topic to be drained
+	DrainTopicMaxMessages = 1000             // maximum number of messages that will be drained from a topic
+	WaitEventTimeout      = 20 * time.Second // maximum time that the component test consumer will wait for a kafka event
+
 )
 
 type SearchReindexTrackerComponent struct {
@@ -63,28 +67,57 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 	c.fakeAPIRouter.healthRequest = c.fakeAPIRouter.fakeHTTP.NewHandler().Get("/health")
 	c.fakeAPIRouter.healthRequest.CustomHandle = statusHandle(200)
 
-	reindexRequestedConsumer := kafkatest.NewMessageConsumer(false)
-	reindexRequestedConsumer.CheckerFunc = funcCheck
-	reindexRequestedConsumer.LogErrorsFunc = func(ctx context.Context) {}
-	reindexRequestedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
-	reindexRequestedConsumer.StartFunc = func() error { return nil }
-	reindexRequestedConsumer.StopFunc = func() error { return nil }
+	kafkaOffset := kafka.OffsetOldest
+
+	reindexRequestedConsumer, err := kafka.NewConsumerGroup(
+		c.ctx,
+		&kafka.ConsumerGroupConfig{
+			BrokerAddrs:  cfg.KafkaConfig.Brokers,
+			Topic:        cfg.KafkaConfig.ReindexRequestedTopic,
+			GroupName:    ComponentTestGroup,
+			KafkaVersion: &cfg.KafkaConfig.Version,
+			Offset:       &kafkaOffset,
+		},
+	)
+	// reindexRequestedConsumer.CheckerFunc = funcCheck
+	// reindexRequestedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	// reindexRequestedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+	// reindexRequestedConsumer.StartFunc = func() error { return nil }
+	// reindexRequestedConsumer.StopFunc = func() error { return nil }
 	c.reindexRequestedConsumer = reindexRequestedConsumer
 
-	reindexTaskCountsConsumer := kafkatest.NewMessageConsumer(false)
-	reindexTaskCountsConsumer.CheckerFunc = funcCheck
-	reindexTaskCountsConsumer.LogErrorsFunc = func(ctx context.Context) {}
-	reindexTaskCountsConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
-	reindexTaskCountsConsumer.StartFunc = func() error { return nil }
-	reindexTaskCountsConsumer.StopFunc = func() error { return nil }
+	reindexTaskCountsConsumer, err := kafka.NewConsumerGroup(
+		c.ctx,
+		&kafka.ConsumerGroupConfig{
+			BrokerAddrs:  cfg.KafkaConfig.Brokers,
+			Topic:        cfg.KafkaConfig.ReindexTaskCountsTopic,
+			GroupName:    ComponentTestGroup,
+			KafkaVersion: &cfg.KafkaConfig.Version,
+			Offset:       &kafkaOffset,
+		},
+	)
+	// reindexTaskCountsConsumer.CheckerFunc = funcCheck
+	// reindexTaskCountsConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	// reindexTaskCountsConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+	// reindexTaskCountsConsumer.StartFunc = func() error { return nil }
+	// reindexTaskCountsConsumer.StopFunc = func() error { return nil }
 	c.reindexTaskCountsConsumer = reindexTaskCountsConsumer
 
-	searchDataImportedConsumer := kafkatest.NewMessageConsumer(false)
-	searchDataImportedConsumer.CheckerFunc = funcCheck
-	searchDataImportedConsumer.LogErrorsFunc = func(ctx context.Context) {}
-	searchDataImportedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
-	searchDataImportedConsumer.StartFunc = func() error { return nil }
-	searchDataImportedConsumer.StopFunc = func() error { return nil }
+	searchDataImportedConsumer, err := kafka.NewConsumerGroup(
+		c.ctx,
+		&kafka.ConsumerGroupConfig{
+			BrokerAddrs:  cfg.KafkaConfig.Brokers,
+			Topic:        cfg.KafkaConfig.SearchDataImportedTopic,
+			GroupName:    ComponentTestGroup,
+			KafkaVersion: &cfg.KafkaConfig.Version,
+			Offset:       &kafkaOffset,
+		},
+	)
+	// searchDataImportedConsumer.CheckerFunc = funcCheck
+	// searchDataImportedConsumer.LogErrorsFunc = func(ctx context.Context) {}
+	// searchDataImportedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+	// searchDataImportedConsumer.StartFunc = func() error { return nil }
+	// searchDataImportedConsumer.StopFunc = func() error { return nil }
 	c.searchDataImportedConsumer = searchDataImportedConsumer
 
 	initMock := &mock.InitialiserMock{

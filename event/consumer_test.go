@@ -50,7 +50,8 @@ func TestProcessMessage(t *testing.T) {
 		}
 
 		validMsg := marshal(event.ReindexRequestedSchema, testReindexRequestedEvent)
-		kafkaMsg := kafkatest.NewMessage(validMsg, 0)
+		kafkaMsg, err := kafkatest.NewMessage(validMsg, 0)
+		So(err, ShouldBeNil)
 
 		Convey("When ProcessMessage is called", func() {
 			err := event.ProcessMessage(testCtx, cfg, topicEvent, kafkaMsg)
@@ -67,7 +68,8 @@ func TestProcessMessage(t *testing.T) {
 			Schema:  event.ReindexRequestedSchema,
 		}
 
-		kafkaMsg := kafkatest.NewMessage([]byte("invalid"), 0)
+		kafkaMsg, err := kafkatest.NewMessage([]byte("invalid"), 0)
+		So(err, ShouldBeNil)
 
 		Convey("When ProcessMessage is called", func() {
 			err := event.ProcessMessage(testCtx, cfg, topicEvent, kafkaMsg)
@@ -82,7 +84,8 @@ func TestProcessMessage(t *testing.T) {
 		var topicEvent *event.KafkaConsumerEvent[event.ReindexRequestedModel]
 
 		validMsg := marshal(event.ReindexRequestedSchema, testReindexRequestedEvent)
-		kafkaMsg := kafkatest.NewMessage(validMsg, 0)
+		kafkaMsg, err := kafkatest.NewMessage(validMsg, 0)
+		So(err, ShouldBeNil)
 
 		Convey("When ProcessMessage is called", func() {
 			err := event.ProcessMessage(testCtx, cfg, topicEvent, kafkaMsg)
@@ -100,7 +103,8 @@ func TestProcessMessage(t *testing.T) {
 		}
 
 		validMsg := marshal(event.ReindexRequestedSchema, testReindexRequestedEvent)
-		kafkaMsg := kafkatest.NewMessage(validMsg, 0)
+		kafkaMsg, err := kafkatest.NewMessage(validMsg, 0)
+		So(err, ShouldBeNil)
 
 		Convey("When ProcessMessage is called", func() {
 			err := event.ProcessMessage(testCtx, cfg, topicEvent, kafkaMsg)
