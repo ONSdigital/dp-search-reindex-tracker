@@ -42,11 +42,9 @@ type SearchReindexTrackerComponent struct {
 	cfg                        *config.Config
 	HTTPServer                 *http.Server
 	startTime                  time.Time
-	signals                    chan os.Signal
 }
 
 func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) {
-
 	c := &SearchReindexTrackerComponent{
 		HTTPServer: &http.Server{
 			ReadHeaderTimeout: 5,
