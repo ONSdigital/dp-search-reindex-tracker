@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/maxcnunes/httpfake"
 )
 

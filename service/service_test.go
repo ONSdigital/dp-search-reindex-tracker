@@ -191,7 +191,7 @@ func TestClose(t *testing.T) {
 		hcStopped := false
 
 		consumerMock := &kafkatest.IConsumerGroupMock{
-			CloseFunc:           func(ctx context.Context) error { return nil },
+			CloseFunc:           func(ctx context.Context, optFuncs ...kafka.OptFunc) error { return nil },
 			CheckerFunc:         func(ctx context.Context, state *healthcheck.CheckState) error { return nil },
 			ChannelsFunc:        func() *kafka.ConsumerGroupChannels { return &kafka.ConsumerGroupChannels{} },
 			LogErrorsFunc:       func(ctx context.Context) {},

@@ -29,7 +29,11 @@ func theseEventsAreConsumed[M event.KafkaAvroModel](c *SearchReindexTrackerCompo
 			return fmt.Errorf("failed to marshal events - err: %v", err)
 		}
 
-		consumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
+		msg, err := kafkatest.NewMessage(bytes, 0)
+		if err != nil {
+			return fmt.Errorf("failed to marshal message - err: %v", err)
+		}
+		consumer.Channels().Upstream <- msg
 	}
 
 	time.Sleep(300 * time.Millisecond)

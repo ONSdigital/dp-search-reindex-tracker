@@ -79,11 +79,6 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 			Offset:       &kafkaOffset,
 		},
 	)
-	// reindexRequestedConsumer.CheckerFunc = funcCheck
-	// reindexRequestedConsumer.LogErrorsFunc = func(ctx context.Context) {}
-	// reindexRequestedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
-	// reindexRequestedConsumer.StartFunc = func() error { return nil }
-	// reindexRequestedConsumer.StopFunc = func() error { return nil }
 	c.reindexRequestedConsumer = reindexRequestedConsumer
 
 	reindexTaskCountsConsumer, err := kafka.NewConsumerGroup(
@@ -96,11 +91,6 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 			Offset:       &kafkaOffset,
 		},
 	)
-	// reindexTaskCountsConsumer.CheckerFunc = funcCheck
-	// reindexTaskCountsConsumer.LogErrorsFunc = func(ctx context.Context) {}
-	// reindexTaskCountsConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
-	// reindexTaskCountsConsumer.StartFunc = func() error { return nil }
-	// reindexTaskCountsConsumer.StopFunc = func() error { return nil }
 	c.reindexTaskCountsConsumer = reindexTaskCountsConsumer
 
 	searchDataImportedConsumer, err := kafka.NewConsumerGroup(
@@ -113,11 +103,6 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 			Offset:       &kafkaOffset,
 		},
 	)
-	// searchDataImportedConsumer.CheckerFunc = funcCheck
-	// searchDataImportedConsumer.LogErrorsFunc = func(ctx context.Context) {}
-	// searchDataImportedConsumer.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
-	// searchDataImportedConsumer.StartFunc = func() error { return nil }
-	// searchDataImportedConsumer.StopFunc = func() error { return nil }
 	c.searchDataImportedConsumer = searchDataImportedConsumer
 
 	initMock := &mock.InitialiserMock{
