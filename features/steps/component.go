@@ -12,6 +12,7 @@ import (
 	componentTest "github.com/ONSdigital/dp-component-test"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	kafka "github.com/ONSdigital/dp-kafka/v3"
+	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
 	"github.com/ONSdigital/dp-search-reindex-tracker/config"
 	"github.com/ONSdigital/dp-search-reindex-tracker/service"
 	"github.com/ONSdigital/dp-search-reindex-tracker/service/mock"
@@ -31,9 +32,9 @@ type SearchReindexTrackerComponent struct {
 	componentTest.ErrorFeature
 	serviceList                *service.ExternalServiceList
 	fakeAPIRouter              *FakeAPI
-	reindexRequestedConsumer   kafka.IConsumerGroup
-	reindexTaskCountsConsumer  kafka.IConsumerGroup
-	searchDataImportedConsumer kafka.IConsumerGroup
+	reindexRequestedConsumer   *kafkatest.Consumer
+	reindexTaskCountsConsumer  *kafkatest.Consumer
+	searchDataImportedConsumer *kafkatest.Consumer
 	apiFeature                 *componentTest.APIFeature
 	errorChan                  chan error
 	svc                        *service.Service
@@ -41,9 +42,11 @@ type SearchReindexTrackerComponent struct {
 	cfg                        *config.Config
 	HTTPServer                 *http.Server
 	startTime                  time.Time
+	signals                    chan os.Signal
 }
 
 func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) {
+
 	c := &SearchReindexTrackerComponent{
 		HTTPServer: &http.Server{
 			ReadHeaderTimeout: 5,
@@ -67,43 +70,65 @@ func NewSearchReindexTrackerComponent() (*SearchReindexTrackerComponent, error) 
 	c.fakeAPIRouter.healthRequest = c.fakeAPIRouter.fakeHTTP.NewHandler().Get("/health")
 	c.fakeAPIRouter.healthRequest.CustomHandle = statusHandle(200)
 
-	kafkaOffset := kafka.OffsetOldest
-
-	reindexRequestedConsumer, err := kafka.NewConsumerGroup(
+	if c.reindexRequestedConsumer, err = kafkatest.NewConsumer(
 		c.ctx,
 		&kafka.ConsumerGroupConfig{
 			BrokerAddrs:  cfg.KafkaConfig.Brokers,
 			Topic:        cfg.KafkaConfig.ReindexRequestedTopic,
 			GroupName:    ComponentTestGroup,
 			KafkaVersion: &cfg.KafkaConfig.Version,
-			Offset:       &kafkaOffset,
 		},
-	)
-	c.reindexRequestedConsumer = reindexRequestedConsumer
+		&kafkatest.ConsumerConfig{
+			NumPartitions:     10,
+			ChannelBufferSize: 10,
+			InitAtCreation:    true,
+		},
+	); err != nil {
+		return nil, fmt.Errorf("error creating kafka consumer: %w", err)
+	}
 
-	reindexTaskCountsConsumer, err := kafka.NewConsumerGroup(
+	c.reindexRequestedConsumer.Mock.CheckerFunc = funcCheck
+	c.reindexRequestedConsumer.Mock.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+
+	if c.reindexTaskCountsConsumer, err = kafkatest.NewConsumer(
 		c.ctx,
 		&kafka.ConsumerGroupConfig{
 			BrokerAddrs:  cfg.KafkaConfig.Brokers,
 			Topic:        cfg.KafkaConfig.ReindexTaskCountsTopic,
 			GroupName:    ComponentTestGroup,
 			KafkaVersion: &cfg.KafkaConfig.Version,
-			Offset:       &kafkaOffset,
 		},
-	)
-	c.reindexTaskCountsConsumer = reindexTaskCountsConsumer
+		&kafkatest.ConsumerConfig{
+			NumPartitions:     10,
+			ChannelBufferSize: 10,
+			InitAtCreation:    true,
+		},
+	); err != nil {
+		return nil, fmt.Errorf("error creating kafka consumer: %w", err)
+	}
 
-	searchDataImportedConsumer, err := kafka.NewConsumerGroup(
+	c.reindexTaskCountsConsumer.Mock.CheckerFunc = funcCheck
+	c.reindexTaskCountsConsumer.Mock.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
+
+	if c.searchDataImportedConsumer, err = kafkatest.NewConsumer(
 		c.ctx,
 		&kafka.ConsumerGroupConfig{
 			BrokerAddrs:  cfg.KafkaConfig.Brokers,
 			Topic:        cfg.KafkaConfig.SearchDataImportedTopic,
 			GroupName:    ComponentTestGroup,
 			KafkaVersion: &cfg.KafkaConfig.Version,
-			Offset:       &kafkaOffset,
 		},
-	)
-	c.searchDataImportedConsumer = searchDataImportedConsumer
+		&kafkatest.ConsumerConfig{
+			NumPartitions:     10,
+			ChannelBufferSize: 10,
+			InitAtCreation:    true,
+		},
+	); err != nil {
+		return nil, fmt.Errorf("error creating kafka consumer: %w", err)
+	}
+
+	c.searchDataImportedConsumer.Mock.CheckerFunc = funcCheck
+	c.searchDataImportedConsumer.Mock.RegisterHandlerFunc = func(ctx context.Context, h kafka.Handler) error { return nil }
 
 	initMock := &mock.InitialiserMock{
 		DoGetKafkaConsumersFunc: c.DoGetConsumers,
@@ -174,7 +199,7 @@ func (c *SearchReindexTrackerComponent) DoGetHTTPServer(bindAddr string, router 
 }
 
 func (c *SearchReindexTrackerComponent) DoGetConsumers(ctx context.Context, kafkaCfg *config.KafkaConfig) (reindexRequested, reindexTaskCounts, searchDataImported kafka.IConsumerGroup, err error) {
-	return c.reindexRequestedConsumer, c.reindexTaskCountsConsumer, c.searchDataImportedConsumer, nil
+	return c.reindexRequestedConsumer.Mock, c.reindexTaskCountsConsumer.Mock, c.searchDataImportedConsumer.Mock, nil
 }
 
 func funcCheck(ctx context.Context, state *healthcheck.CheckState) error {

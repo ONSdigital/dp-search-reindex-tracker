@@ -111,13 +111,13 @@ func (c *SearchReindexTrackerComponent) theStateOfTheReindexJobShouldNotBeUpdate
 }
 
 func (c *SearchReindexTrackerComponent) theseReindexRequestedEventsAreConsumed(table *godog.Table) error {
-	return theseEventsAreConsumed[event.ReindexRequestedModel](c, event.ReindexRequestedSchema, c.reindexRequestedConsumer, table)
+	return theseEventsAreConsumed[event.ReindexRequestedModel](c, event.ReindexRequestedSchema, c.reindexRequestedConsumer.Mock, table)
 }
 
 func (c *SearchReindexTrackerComponent) theseReindexTaskCountsEventsAreConsumed(table *godog.Table) error {
-	return theseEventsAreConsumed[event.ReindexTaskCountsModel](c, event.ReindexTaskCountsSchema, c.reindexTaskCountsConsumer, table)
+	return theseEventsAreConsumed[event.ReindexTaskCountsModel](c, event.ReindexTaskCountsSchema, c.reindexTaskCountsConsumer.Mock, table)
 }
 
 func (c *SearchReindexTrackerComponent) theseSearchDataImportEventsAreConsumed(table *godog.Table) error {
-	return theseEventsAreConsumed[event.SearchDataImportModel](c, event.SearchDataImportSchema, c.searchDataImportedConsumer, table)
+	return theseEventsAreConsumed[event.SearchDataImportModel](c, event.SearchDataImportSchema, c.searchDataImportedConsumer.Mock, table)
 }
