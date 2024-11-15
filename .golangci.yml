@@ -48,7 +48,6 @@ linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
-    - depguard
     - dogsled
     - errcheck
     - gochecknoinits
@@ -77,6 +76,7 @@ issues:
     - path: \.go
       linters:
         - typecheck
+        - revive
     - path: _test\.go
       linters:
         - gocyclo
@@ -84,11 +84,10 @@ issues:
         - dupl
         - gosec
         - typecheck
+    # Allow dot import in test files for goconvey
+    - path: _test.go
+      text: "dot-imports"
+      linters:
+        - revive
+      source: "github.com/smartystreets/goconvey/convey"
   new: false
-
-# golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
-service:
-  golangci-lint-version: 1.50.x # use the fixed version to not introduce new linters unexpectedly
-  prepare:
-    - echo "here I can run custom commands, but no preparation needed for this repo"

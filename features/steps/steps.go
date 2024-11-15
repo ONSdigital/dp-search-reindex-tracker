@@ -44,7 +44,7 @@ func (c *SearchReindexTrackerComponent) delayTimeBySeconds(sec int) error {
 func (c *SearchReindexTrackerComponent) iShouldReceiveTheFollowingHealthJSONResponse(expectedResponse *godog.DocString) error {
 	var healthResponse, expectedHealth HealthCheckTest
 
-	responseBody, err := io.ReadAll(c.apiFeature.HttpResponse.Body)
+	responseBody, err := io.ReadAll(c.apiFeature.HTTPResponse.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response of search controller component - error: %v", err)
 	}
