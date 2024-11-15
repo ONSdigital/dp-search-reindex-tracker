@@ -1,3 +1,4 @@
+// Deprecated: This repository will be archived in November 2024 as it is no longer in development
 module github.com/ONSdigital/dp-search-reindex-tracker
 
 go 1.21

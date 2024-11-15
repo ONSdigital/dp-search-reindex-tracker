@@ -1,6 +1,12 @@
 # dp-search-reindex-tracker
 
-dp-search-reindex-tracker tracks the progress of a search reindex job
+---
+
+:warning: This repository was be archived in November 2024 is no longer in development. :warning:
+
+---
+
+A deprecated service that was used to tracks the progress of a search reindex job
 
 See [search service architecture docs here](https://github.com/ONSdigital/dp-search-api/tree/develop/architecture#search-service-architecture)
 
